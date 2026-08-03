@@ -690,7 +690,7 @@ still active is called the
 Referring to any non-static member or base class of an object
 in the handler for a
 \grammarterm{function-try-block}
-of a constructor or destructor for that object results in undefined behavior.
+of a constructor or destructor for that object results in undefined behavior\ubdef{except.handle.handler.ctor.dtor}.
 
 \pnum
 Exceptions thrown in destructors of objects with static storage duration or in
@@ -781,9 +781,7 @@ as a suffix of a function declarator\iref{dcl.fct}.
 \indextext{exception specification!noexcept!constant expression and}%
 In a \grammarterm{noexcept-specifier}, the \grammarterm{constant-expression},
 if supplied, shall be a contextually converted constant expression
-of type \keyword{bool}\iref{expr.const};
-that constant expression is the exception specification of
-the function type in which the \grammarterm{noexcept-specifier} appears.
+of type \keyword{bool}\iref{expr.const.const}.
 A \tcode{(} token that follows \keyword{noexcept} is part of the
 \grammarterm{noexcept-specifier} and does not commence an
 initializer\iref{dcl.init}.
@@ -798,6 +796,10 @@ void f() noexcept(sizeof(char[2])); // error: narrowing conversion of value 2 to
 void g() noexcept(sizeof(char));    // OK, conversion of value 1 to type \keyword{bool} is non-narrowing
 \end{codeblock}
 \end{example}
+
+\pnum
+If the \grammarterm{noexcept-specifier} appears in a function type,
+the \grammarterm{constant-expression} is the type's exception specification.
 
 \pnum
 If a declaration of a function
@@ -887,7 +889,7 @@ polymorphic class type\iref{expr.typeid},
 or
 \item
 any of the immediate subexpressions\iref{intro.execution}
-of $E$ is potentially-throwing.
+of $E$ that is not an unevaluated operand is potentially-throwing.
 \end{itemize}
 
 \pnum
@@ -944,7 +946,11 @@ with no explicit \grammarterm{noexcept-specifier}
 has a non-throwing exception specification.
 
 \pnum
-The exception specification for a comparison operator function\iref{over.binary}
+The exception specification for
+\begin{itemize}
+\item a comparison operator function\iref{over.binary} or
+\item a postfix increment or decrement operator function\iref{over.inc.general}
+\end{itemize}
 without a \grammarterm{noexcept-specifier}
 that is defaulted on its first declaration
 is potentially-throwing if and only if
@@ -996,7 +1002,9 @@ overload resolution\iref{over.match,over.over};
 declaration (e.g., an explicit specialization or an overriding virtual
 function);
 
-\item the function is defined; or
+\item the function is defined;
+
+\item the function is represented by a reflection; or
 
 \item the exception specification is needed for a defaulted
 function that calls the function.
@@ -1009,10 +1017,7 @@ the implicit exception specification to compare against.
 \end{note}
 \end{itemize}
 The exception specification of a defaulted
-function is evaluated as described above only when needed; similarly, the
-\grammarterm{noexcept-specifier} of a specialization
-of a templated function
-is instantiated only when needed.
+function is evaluated as described above only when needed.
 %
 \indextext{exception specification|)}
 
@@ -1143,7 +1148,7 @@ is destroyed and
 
 \item%
 when \tcode{std::execution::get_parallel_scheduler} is called and
-\tcode{std::execution::system_context_replace\-ability::query_parallel_scheduler_backend()}
+\tcode{std::execution::parallel_scheduler_re\-placement::query_parallel_scheduler_backend()}
 returns a null pointer value\iref{exec.par.scheduler}, or
 
 \item%

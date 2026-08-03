@@ -541,11 +541,11 @@ to aid in the specification of the library:
 namespace std {
   template<class T>
     requires @\libconcept{convertible_to}@<T, decay_t<T>>
-      constexpr decay_t<T> @\exposidnc{decay-copy}@(T&& v)       // \expos
+      constexpr decay_t<T> @\exposidnc{decay-copy}@(T&& v)          // \expos
         noexcept(is_nothrow_convertible_v<T, decay_t<T>>)
       { return std::forward<T>(v); }
 
-  constexpr auto @\exposidnc{synth-three-way}@ =                 // \expos
+  constexpr auto @\exposidnc{synth-three-way}@ =                    // \expos
     []<class T, class U>(const T& t, const U& u)
       requires requires {
         { t < u } -> @\exposconcept{boolean-testable}@;
@@ -562,8 +562,15 @@ namespace std {
     };
 
   template<class T, class U = T>
-  using @\exposidnc{synth-three-way-result}@ =                  // \expos
+  using @\exposidnc{synth-three-way-result}@ =                      // \expos
     decltype(@\exposidnc{synth-three-way}@(declval<T&>(), declval<U&>()));
+
+  template<class T>
+    concept @\defexposconceptnc{constexpr-wrapper-like}@ =                  // \expos
+      @\libconcept{convertible_to}@<T, decltype(T::value)> &&
+      @\libconcept{equality_comparable_with}@<T, decltype(T::value)> &&
+      bool_constant<T() == T::value>::value &&
+      bool_constant<static_cast<decltype(T::value)>(T()) == T::value>::value;
 }
 \end{codeblock}
 
@@ -1617,9 +1624,9 @@ include at least the headers shown in \tref{headers.cpp.fs}.
 \ref{support.rtti}       & Type identification       & \tcode{<typeinfo>}         \\ \rowsep
 \ref{support.srcloc}     & Source location           & \tcode{<source_location>}  \\ \rowsep
 \ref{support.exception}  & Exception handling        & \tcode{<exception>}        \\ \rowsep
+\ref{support.contract}   & Contract-violation handling & \tcode{<contracts>}      \\ \rowsep
 \ref{support.initlist}   & Initializer lists         & \tcode{<initializer_list>} \\ \rowsep
 \ref{cmp}                & Comparisons               & \tcode{<compare>}          \\ \rowsep
-\ref{support.contract}   & Contract-violation handling & \tcode{<contracts>}      \\ \rowsep
 \ref{support.coroutine}  & Coroutines support        & \tcode{<coroutine>}        \\ \rowsep
 \ref{support.runtime}    & Other runtime support     & \tcode{<cstdarg>}          \\ \rowsep
 \ref{concepts}           & Concepts library          & \tcode{<concepts>}         \\ \rowsep
@@ -1817,12 +1824,6 @@ supplied by a \Cpp{} program instantiating a template,
 rvalue of type \tcode{const T}.
 \end{itemize}
 
-\pnum
-In general, a default constructor is not required. Certain container class
-member function signatures specify \tcode{T()} as a default argument.
-\tcode{T()} shall be a well-defined expression\iref{dcl.init} if one of those
-signatures is called using the default argument\iref{dcl.fct.default}.
-
 \begin{oldconcepttable}{EqualityComparable}{}{cpp17.equalitycomparable}
 {x{1in}x{1in}p{3in}}
 \topline
@@ -1850,7 +1851,6 @@ If \tcode{a == b} and \tcode{b == c}, then \tcode{a == c}.
 \tcode{<} is a strict weak ordering relation\iref{alg.sorting}    \\
 \end{oldconcepttable}
 
-\enlargethispage{-3\baselineskip}
 \begin{oldconcepttable}{DefaultConstructible}{}{cpp17.defaultconstructible}
 {x{2.15in}p{3in}}
 \topline
@@ -2347,12 +2347,12 @@ For all \tcode{U} (including \tcode{T}),
 
 \pnum
 \remarks
-If \tcode{Allocator} is a class template instantiation of the form
+If \tcode{Allocator} is a class template specialization of the form
 \tcode{SomeAllocator<T, Args>}, where \tcode{Args} is zero or more type
 arguments, and \tcode{Allocator} does not supply a \tcode{rebind} member
 template, the standard \tcode{allocator_traits} template uses
 \tcode{SomeAllocator<U, Args>} in place of \tcode{Allocator::re\-bind<U>::other}
-by default. For allocator types that are not template instantiations of the
+by default. For allocator types that are not template specializations of the
 above form, no default is provided.
 
 \pnum
@@ -3074,7 +3074,7 @@ original template.
 Let \tcode{\placeholder{F}} denote
 a standard library function\iref{global.functions},
 a standard library static member function,
-or an instantiation
+or a specialization
 of a standard library function template.
 Unless \tcode{\placeholder{F}} is designated
 an \defnadj{addressable}{function},
@@ -3096,7 +3096,7 @@ to \tcode{\placeholder{F}}
 or
 if it attempts to form a pointer-to-member designating
 either a standard library non-static member function\iref{member.functions}
-or an instantiation of a standard library member function template.
+or a specialization of a standard library member function template.
 
 \pnum
 Let \tcode{\placeholder{F}} denote
@@ -3104,6 +3104,14 @@ a standard library function or function template.
 Unless \tcode{\placeholder{F}} is designated an addressable function,
 it is unspecified if or how
 a reflection value designating the associated entity can be formed.
+For any value \tcode{\placeholder{p}} of type \tcode{meta::info} that
+represents a reflection of a parameter of \tcode{\placeholder{F}},
+it is unspecified if \tcode{has_identifier(\placeholder{p})}
+returns \tcode{true} or \tcode{false}, and
+if \tcode{meta::has_identifier(\placeholder{p})} is \tcode{true}, then
+the \ntmbs{} produced by
+\tcode{meta::identifier_of(\placeholder{p})} and
+\tcode{meta::u8identifier_of(\placeholder{p})} is unspecified.
 %FIXME: Why is this not an example, but a note that begins with "For example"?
 \begin{note}
 For example, it is possible that \tcode{std::meta::members_of}
@@ -3697,15 +3705,9 @@ The phrase ``unless otherwise specified'' applies to cases such as
 the swappable with requirements\iref{swappable.requirements}.
 The exception for overloaded operators allows argument-dependent lookup
 in cases like that of
-\tcode{ostream_iterator::operator=}\iref{ostream.iterator.ops}:
-
-\effects
-\begin{codeblock}
-*@\textit{out_stream}@ << value;
-if (@\textit{delim}@ != 0)
-  *@\textit{out_stream}@ << @\textit{delim}@;
-return *this;
-\end{codeblock}
+\tcode{ostream_iterator::operator=}\iref{ostream.iterator.ops}
+where lookup for the expression \tcode{*out_stream << value}
+includes the associated namespaces of \tcode{value}'s type.
 \end{note}
 
 \rSec3[member.functions]{Member functions}
@@ -3787,6 +3789,16 @@ original order).
 Except where explicitly specified in this document, it is \impldef{which functions in
 the \Cpp{} standard library may be recursively reentered} which functions in the \Cpp{} standard
 library may be recursively reentered.
+
+\pnum
+During the execution of
+a standard library non-static member function $F$ on an object,
+if that object is accessed through a glvalue that is not obtained,
+directly or indirectly,
+from the object parameter of $F$,
+in a manner that can conflict\iref{intro.races}
+with any access that $F$ is permitted to perform\iref{res.on.data.races},
+the behavior is undefined unless otherwise specified.
 
 \rSec3[res.on.data.races]{Data race avoidance}
 

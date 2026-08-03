@@ -160,19 +160,19 @@ namespace std::chrono {
                   minutes* offset = nullptr);
 
   // convenience typedefs
-  using nanoseconds  = duration<@\term{signed integer type of at least 64 bits}@, nano>;
-  using microseconds = duration<@\term{signed integer type of at least 55 bits}@, micro>;
-  using milliseconds = duration<@\term{signed integer type of at least 45 bits}@, milli>;
-  using seconds      = duration<@\term{signed integer type of at least 35 bits}@>;
-  using minutes      = duration<@\term{signed integer type of at least 29 bits}@, ratio<  60>>;
-  using hours        = duration<@\term{signed integer type of at least 23 bits}@, ratio<3600>>;
-  using days         = duration<@\term{signed integer type of at least 25 bits}@,
+  using nanoseconds  = duration<@\placeholder{signed integer type of at least 64 bits}@, nano>;
+  using microseconds = duration<@\placeholder{signed integer type of at least 55 bits}@, micro>;
+  using milliseconds = duration<@\placeholder{signed integer type of at least 45 bits}@, milli>;
+  using seconds      = duration<@\placeholder{signed integer type of at least 35 bits}@>;
+  using minutes      = duration<@\placeholder{signed integer type of at least 29 bits}@, ratio<  60>>;
+  using hours        = duration<@\placeholder{signed integer type of at least 23 bits}@, ratio<3600>>;
+  using days         = duration<@\placeholder{signed integer type of at least 25 bits}@,
                                 ratio_multiply<ratio<24>, hours::period>>;
-  using weeks        = duration<@\term{signed integer type of at least 22 bits}@,
+  using weeks        = duration<@\placeholder{signed integer type of at least 22 bits}@,
                                 ratio_multiply<ratio<7>, days::period>>;
-  using years        = duration<@\term{signed integer type of at least 17 bits}@,
+  using years        = duration<@\placeholder{signed integer type of at least 17 bits}@,
                                 ratio_multiply<ratio<146097, 400>, days::period>>;
-  using months       = duration<@\term{signed integer type of at least 20 bits}@,
+  using months       = duration<@\placeholder{signed integer type of at least 20 bits}@,
                                 ratio_divide<years::period, ratio<12>>>;
 
   // \ref{time.point.nonmember}, \tcode{time_point} arithmetic
@@ -800,9 +800,9 @@ namespace std::chrono {
   strong_ordering operator<=>(const time_zone_link& x, const time_zone_link& y);
 
   // \ref{time.format}, formatting
-  template<class Duration> struct @\placeholder{local-time-format-t}@;        // \expos
+  template<class Duration> struct @\exposid{local-time-format-t}@;        // \expos
   template<class Duration>
-    @\placeholder{local-time-format-t}@<Duration>
+    @\exposid{local-time-format-t}@<Duration>
       local_time_format(local_time<Duration> time, const string* abbrev = nullptr,
                         const seconds* offset_sec = nullptr);
 }
@@ -823,7 +823,7 @@ namespace std {
   template<class Duration, class charT>
     struct formatter<chrono::local_time<Duration>, charT>;
   template<class Duration, class charT>
-    struct formatter<chrono::@\placeholder{local-time-format-t}@<Duration>, charT>;
+    struct formatter<chrono::@\exposid{local-time-format-t}@<Duration>, charT>;
   template<class charT> struct formatter<chrono::day, charT>;
   template<class charT> struct formatter<chrono::month, charT>;
   template<class charT> struct formatter<chrono::year, charT>;
@@ -1015,7 +1015,8 @@ This means \tcode{C1} did not wrap around between \tcode{t1} and
 \tcode{C1::is_steady}  &
   \tcode{const bool}      &
   \tcode{true} if \tcode{t1 <= t2} is always \tcode{true} and the time between clock
-  ticks is constant, otherwise \tcode{false}.  \\ \rowsep
+  ticks is constant, otherwise \tcode{false}.
+  \tcode{C1::is_steady} shall be usable in constant expressions\iref{expr.const}.  \\ \rowsep
 
 \tcode{C1::now()} &
   \tcode{C1::time_point}  &
@@ -1081,12 +1082,12 @@ if it behaved like an integral type for the purpose of these conversions.
 \indexlibraryglobal{duration_values}%
 \begin{itemdecl}
 template<class Rep>
-  struct duration_values {
-  public:
-    static constexpr Rep zero() noexcept;
-    static constexpr Rep min() noexcept;
-    static constexpr Rep max() noexcept;
-  };
+struct duration_values {
+public:
+  static constexpr Rep zero() noexcept;
+  static constexpr Rep min() noexcept;
+  static constexpr Rep max() noexcept;
+};
 \end{itemdecl}
 
 \pnum
@@ -1245,7 +1246,7 @@ namespace std::chrono {
     using period = Period::type;
 
   private:
-    rep rep_;       // \expos
+    rep @\exposid{rep_}@;       // \expos
 
   public:
     // \ref{time.duration.cons}, construct/copy/destroy
@@ -1287,7 +1288,10 @@ namespace std::chrono {
 
 \pnum
 \tcode{Rep} shall be an arithmetic type or a class emulating an arithmetic type.
-If \tcode{duration} is instantiated with a \tcode{duration} type as the argument for the template
+If a specialization of \tcode{duration}
+is instantiated with
+a cv-qualified type or a specialization of \tcode{duration}
+as the argument for the template
 parameter \tcode{Rep}, the program is ill-formed.
 
 \pnum
@@ -1301,7 +1305,7 @@ those thrown by the indicated operations on their representations.
 \pnum
 The defaulted copy constructor of \tcode{duration} shall be a
 constexpr function if and only if the required initialization
-of the member \tcode{rep_} for copy and move, respectively, would
+of the member \exposid{rep_} for copy and move, respectively, would
 be constexpr-suitable\iref{dcl.constexpr}.
 
 \pnum
@@ -1339,7 +1343,7 @@ duration<int, milli> d2(3.5);       // error
 
 \pnum
 \effects
-Initializes \tcode{rep_} with \tcode{r}.
+Initializes \exposid{rep_} with \tcode{r}.
 \end{itemdescr}
 
 \indexlibraryctor{duration}%
@@ -1375,7 +1379,7 @@ duration<int, milli> ms2 = us;      // error
 
 \pnum
 \effects
-Initializes \tcode{rep_} with \tcode{duration_cast<duration>(d).count()}.
+Initializes \exposid{rep_} with \tcode{duration_cast<duration>(d).count()}.
 \end{itemdescr}
 
 \rSec2[time.duration.observer]{Observer}
@@ -1388,7 +1392,7 @@ constexpr rep count() const;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{rep_}.
+\exposid{rep_}.
 \end{itemdescr}
 
 \rSec2[time.duration.arithmetic]{Arithmetic}
@@ -1412,7 +1416,7 @@ constexpr common_type_t<duration> operator-() const;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{common_type_t<duration>(-rep_)}.
+\tcode{common_type_t<duration>(-\exposid{rep_})}.
 \end{itemdescr}
 
 \indexlibrarymember{operator++}{duration}%
@@ -1423,7 +1427,7 @@ constexpr duration& operator++();
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{++rep_}.
+Equivalent to: \tcode{++\exposid{rep_}}.
 
 \pnum
 \returns
@@ -1438,7 +1442,7 @@ constexpr duration operator++(int);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{return duration(rep_++);}
+Equivalent to: \tcode{return duration(\exposid{rep_}++);}
 \end{itemdescr}
 
 \indexlibrarymember{operator--}{duration}%
@@ -1449,7 +1453,7 @@ constexpr duration& operator--();
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{--rep_}.
+Equivalent to: \tcode{--\exposid{rep_}}.
 
 \pnum
 \returns
@@ -1464,7 +1468,7 @@ constexpr duration operator--(int);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{return duration(rep_-{}-);}
+Equivalent to: \tcode{return duration(\exposid{rep_}-{}-);}
 \end{itemdescr}
 
 \indexlibrarymember{operator+=}{duration}%
@@ -1475,7 +1479,7 @@ constexpr duration& operator+=(const duration& d);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{rep_ += d.count()}.
+Equivalent to: \tcode{\exposid{rep_} += d.count()}.
 
 \pnum
 \returns
@@ -1490,7 +1494,7 @@ constexpr duration& operator-=(const duration& d);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{rep_ -= d.count()}.
+Equivalent to: \tcode{\exposid{rep_} -= d.count()}.
 
 \pnum
 \returns
@@ -1505,7 +1509,7 @@ constexpr duration& operator*=(const rep& rhs);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{rep_ *= rhs}.
+Equivalent to: \tcode{\exposid{rep_} *= rhs}.
 
 \pnum
 \returns
@@ -1520,7 +1524,7 @@ constexpr duration& operator/=(const rep& rhs);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{rep_ /= rhs}.
+Equivalent to: \tcode{\exposid{rep_} /= rhs}.
 
 \pnum
 \returns
@@ -1535,7 +1539,7 @@ constexpr duration& operator%=(const rep& rhs);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{rep_ \%= rhs}.
+Equivalent to: \tcode{\exposid{rep_} \%= rhs}.
 
 \pnum
 \returns
@@ -1550,7 +1554,7 @@ constexpr duration& operator%=(const duration& rhs);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{rep_ \%= rhs.count()}.
+Equivalent to: \tcode{\exposid{rep_} \%= rhs.count()}.
 
 \pnum
 \returns
@@ -2222,7 +2226,7 @@ namespace std::chrono {
     using period   = duration::period;
 
   private:
-    duration d_;                                                // \expos
+    duration @\exposid{d_}@;                                                // \expos
 
   public:
     // \ref{time.point.cons}, construct
@@ -2263,7 +2267,7 @@ constexpr time_point();
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{d_} with \tcode{duration::zero()}.
+Initializes \exposid{d_} with \tcode{duration::zero()}.
 Such a \tcode{time_point} object represents the epoch.
 \end{itemdescr}
 
@@ -2275,7 +2279,7 @@ constexpr explicit time_point(const duration& d);
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{d_} with \tcode{d}.
+Initializes \exposid{d_} with \tcode{d}.
 Such a \tcode{time_point} object represents the epoch \tcode{+ d}.
 \end{itemdescr}
 
@@ -2292,7 +2296,7 @@ template<class Duration2>
 
 \pnum
 \effects
-Initializes \tcode{d_} with \tcode{t.time_since_epoch()}.
+Initializes \exposid{d_} with \tcode{t.time_since_epoch()}.
 \end{itemdescr}
 
 \rSec2[time.point.observer]{Observer}
@@ -2305,7 +2309,7 @@ constexpr duration time_since_epoch() const;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{d_}.
+\exposid{d_}.
 \end{itemdescr}
 
 \rSec2[time.point.arithmetic]{Arithmetic}
@@ -2318,7 +2322,7 @@ constexpr time_point& operator++();
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{++d_}.
+Equivalent to: \tcode{++\exposid{d_}}.
 
 \pnum
 \returns
@@ -2333,7 +2337,7 @@ constexpr time_point operator++(int);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{return time_point\{d_++\};}
+Equivalent to: \tcode{return time_point\{\exposid{d_}++\};}
 \end{itemdescr}
 
 \indexlibrarymember{operator--}{time_point}%
@@ -2344,7 +2348,7 @@ constexpr time_point& operator--();
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{--d_}.
+Equivalent to: \tcode{--\exposid{d_}}.
 
 \pnum
 \returns
@@ -2359,7 +2363,7 @@ constexpr time_point operator--(int);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{return time_point\{d_-{}-\};}
+Equivalent to: \tcode{return time_point\{\exposid{d_}-{}-\};}
 \end{itemdescr}
 
 \indexlibrarymember{operator+=}{time_point}%
@@ -2370,7 +2374,7 @@ constexpr time_point& operator+=(const duration& d);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{d_ += d}.
+Equivalent to: \tcode{\exposid{d_} += d}.
 
 \pnum
 \returns
@@ -2385,7 +2389,7 @@ constexpr time_point& operator-=(const duration& d);
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{d_ -= d}.
+Equivalent to: \tcode{\exposid{d_} -= d}.
 
 \pnum
 \returns
@@ -2741,7 +2745,7 @@ template<class charT, class traits, class Duration>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), tp);
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), tp);
 \end{codeblock}
 
 \pnum
@@ -2937,7 +2941,7 @@ template<class charT, class traits, class Duration>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), t);
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), t);
 \end{codeblock}
 
 \pnum
@@ -3143,7 +3147,7 @@ template<class charT, class traits, class Duration>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), t);
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), t);
 \end{codeblock}
 
 \pnum
@@ -3306,7 +3310,7 @@ template<class charT, class traits, class Duration>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), t);
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), t);
 \end{codeblock}
 
 \pnum
@@ -3429,7 +3433,7 @@ template<class charT, class traits, class Duration>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), t);
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%F %T}"), t);
 \end{codeblock}
 \end{itemdescr}
 
@@ -3956,7 +3960,7 @@ or the last day of the week of a month.
 \begin{codeblock}
 namespace std::chrono {
   class day {
-    unsigned char d_;           // \expos
+    unsigned char @\exposid{d_}@;           // \expos
   public:
     day() = default;
     constexpr explicit day(unsigned d) noexcept;
@@ -3999,7 +4003,7 @@ constexpr explicit day(unsigned d) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{d_} with \tcode{d}.
+Initializes \exposid{d_} with \tcode{d}.
 The value held is unspecified if \tcode{d} is not in the range \crange{0}{255}.
 \end{itemdescr}
 
@@ -4011,7 +4015,7 @@ constexpr day& operator++() noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-\tcode{++d_}.
+\tcode{++\exposid{d_}}.
 
 \pnum
 \returns
@@ -4041,7 +4045,7 @@ constexpr day& operator--() noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Equivalent to: \tcode{--d_}.
+Equivalent to: \tcode{--\exposid{d_}}.
 
 \pnum
 \returns
@@ -4101,7 +4105,7 @@ constexpr explicit operator unsigned() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{d_}.
+\exposid{d_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{day}%
@@ -4112,7 +4116,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{1 <= d_ \&\& d_ <= 31}.
+\tcode{1 <= \exposid{d_} \&\& \exposid{d_} <= 31}.
 \end{itemdescr}
 
 \rSec3[time.cal.day.nonmembers]{Non-member functions}
@@ -4196,8 +4200,8 @@ template<class charT, class traits>
 Equivalent to:
 \begin{codeblock}
 return os << (d.ok() ?
-  format(@\placeholder{STATICALLY-WIDEN}@<charT>("{:%d}"), d) :
-  format(@\placeholder{STATICALLY-WIDEN}@<charT>("{:%d} is not a valid day"), d));
+  format(@\exposid{STATICALLY-WIDEN}@<charT>("{:%d}"), d) :
+  format(@\exposid{STATICALLY-WIDEN}@<charT>("{:%d} is not a valid day"), d));
 \end{codeblock}
 \end{itemdescr}
 
@@ -4249,7 +4253,7 @@ constexpr chrono::day operator""d(unsigned long long d) noexcept;
 \begin{codeblock}
 namespace std::chrono {
   class month {
-    unsigned char m_;           // \expos
+    unsigned char @\exposid{m_}@;           // \expos
   public:
     month() = default;
     constexpr explicit month(unsigned m) noexcept;
@@ -4292,7 +4296,7 @@ constexpr explicit month(unsigned m) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{m_} with \tcode{m}.
+Initializes \exposid{m_} with \tcode{m}.
 The value held is unspecified if \tcode{m} is not in the range \crange{0}{255}.
 \end{itemdescr}
 
@@ -4394,7 +4398,7 @@ constexpr explicit operator unsigned() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{month}%
@@ -4405,7 +4409,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{1 <= m_ \&\& m_ <= 12}.
+\tcode{1 <= \exposid{m_} \&\& \exposid{m_} <= 12}.
 \end{itemdescr}
 
 \rSec3[time.cal.month.nonmembers]{Non-member functions}
@@ -4509,8 +4513,8 @@ template<class charT, class traits>
 Equivalent to:
 \begin{codeblock}
 return os << (m.ok() ?
-  format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%b}"), m) :
-  format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{} is not a valid month"),
+  format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%b}"), m) :
+  format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{} is not a valid month"),
          static_cast<unsigned>(m)));
 \end{codeblock}
 \end{itemdescr}
@@ -4552,7 +4556,7 @@ that value will be assigned to \tcode{*offset} if \tcode{offset} is non-null.
 \begin{codeblock}
 namespace std::chrono {
   class year {
-    short y_;                   // \expos
+    short @\exposid{y_}@;                   // \expos
   public:
     year() = default;
     constexpr explicit year(int y) noexcept;
@@ -4602,7 +4606,7 @@ constexpr explicit year(int y) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{y_} with \tcode{y}.
+Initializes \exposid{y_} with \tcode{y}.
 The value held is unspecified if \tcode{y} is not in the range \crange{-32767}{32767}.
 \end{itemdescr}
 
@@ -4614,7 +4618,7 @@ constexpr year& operator++() noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-\tcode{++y_}.
+\tcode{++\exposid{y_}}.
 
 \pnum
 \returns
@@ -4644,7 +4648,7 @@ constexpr year& operator--() noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-\tcode{--y_}.
+\tcode{--\exposid{y_}}.
 
 \pnum
 \returns
@@ -4715,7 +4719,7 @@ constexpr year operator-() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{year\{-y_\}}.
+\tcode{year\{-\exposid{y_}\}}.
 \end{itemdescr}
 
 \indexlibrarymember{is_leap}{year}%
@@ -4726,7 +4730,7 @@ constexpr bool is_leap() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_ \% 4 == 0 \&\& (y_ \% 100 != 0 || y_ \% 400 == 0)}.
+\tcode{\exposid{y_} \% 4 == 0 \&\& (\exposid{y_} \% 100 != 0 || \exposid{y_} \% 400 == 0)}.
 \end{itemdescr}
 
 \indexlibrarymember{operator int}{year}%
@@ -4737,7 +4741,7 @@ constexpr explicit operator int() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_}.
+\exposid{y_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{year}%
@@ -4748,7 +4752,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{min().y_ <= y_ \&\& y_ <= max().y_}.
+\tcode{min().\exposid{y_} <= \exposid{y_} \&\& \exposid{y_} <= max().\exposid{y_}}.
 \end{itemdescr}
 
 \indexlibrarymember{min}{year}%
@@ -4854,8 +4858,8 @@ template<class charT, class traits>
 Equivalent to:
 \begin{codeblock}
 return os << (y.ok() ?
-  format(@\placeholder{STATICALLY-WIDEN}@<charT>("{:%Y}"), y) :
-  format(@\placeholder{STATICALLY-WIDEN}@<charT>("{:%Y} is not a valid year"), y));
+  format(@\exposid{STATICALLY-WIDEN}@<charT>("{:%Y}"), y) :
+  format(@\exposid{STATICALLY-WIDEN}@<charT>("{:%Y} is not a valid year"), y));
 \end{codeblock}
 \end{itemdescr}
 
@@ -4907,7 +4911,7 @@ constexpr chrono::year operator""y(unsigned long long y) noexcept;
 \begin{codeblock}
 namespace std::chrono {
   class weekday {
-    unsigned char wd_;          // \expos
+    unsigned char @\exposid{wd_}@;          // \expos
   public:
     weekday() = default;
     constexpr explicit weekday(unsigned wd) noexcept;
@@ -4961,7 +4965,7 @@ constexpr explicit weekday(unsigned wd) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{wd_} with \tcode{wd == 7 ?\ 0 :\ wd}.
+Initializes \exposid{wd_} with \tcode{wd == 7 ?\ 0 :\ wd}.
 The value held is unspecified if \tcode{wd} is not in the range \crange{0}{255}.
 \end{itemdescr}
 
@@ -4974,13 +4978,13 @@ constexpr weekday(const sys_days& dp) noexcept;
 \pnum
 \effects
 Computes what day of the week corresponds to the \tcode{sys_days} \tcode{dp},
-and initializes that day of the week in \tcode{wd_}.
+and initializes that day of the week in \exposid{wd_}.
 
 \pnum
 \begin{example}
 If \tcode{dp} represents 1970-01-01,
 the constructed \tcode{weekday} represents Thursday
-by storing \tcode{4} in \tcode{wd_}.
+by storing \tcode{4} in \exposid{wd_}.
 \end{example}
 \end{itemdescr}
 
@@ -4993,7 +4997,7 @@ constexpr explicit weekday(const local_days& dp) noexcept;
 \pnum
 \effects
 Computes what day of the week corresponds to the \tcode{local_days} \tcode{dp},
-and initializes that day of the week in \tcode{wd_}.
+and initializes that day of the week in \exposid{wd_}.
 
 \pnum
 \ensures
@@ -5099,7 +5103,7 @@ constexpr unsigned c_encoding() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wd_}.
+\exposid{wd_}.
 \end{itemdescr}
 
 \indexlibrarymember{iso_encoding}{weekday}%
@@ -5110,7 +5114,7 @@ constexpr unsigned iso_encoding() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wd_ == 0u ?\ 7u :\ wd_}.
+\tcode{\exposid{wd_} == 0u ?\ 7u :\ \exposid{wd_}}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{weekday}%
@@ -5121,7 +5125,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wd_ <= 6}.
+\tcode{\exposid{wd_} <= 6}.
 \end{itemdescr}
 
 \indexlibrarymember{operator[]}{weekday}%
@@ -5156,7 +5160,7 @@ constexpr bool operator==(const weekday& x, const weekday& y) noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{x.wd_ == y.wd_}.
+\tcode{x.\exposid{wd_} == y.\exposid{wd_}}.
 \end{itemdescr}
 
 \indexlibrarymember{operator+}{weekday}%
@@ -5168,7 +5172,7 @@ constexpr weekday operator+(const weekday& x, const days& y) noexcept;
 \pnum
 \returns
 \begin{codeblock}
-weekday{modulo(static_cast<long long>(x.wd_) + y.count(), 7)}
+weekday{modulo(static_cast<long long>(x.@\exposid{wd_}@) + y.count(), 7)}
 \end{codeblock}
 where \tcode{modulo(n, 7)} computes the remainder of \tcode{n} divided by 7 using Euclidean division.
 \begin{note}
@@ -5236,9 +5240,9 @@ template<class charT, class traits>
 Equivalent to:
 \begin{codeblock}
 return os << (wd.ok() ?
-  format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%a}"), wd) :
-  format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{} is not a valid weekday"),
-         static_cast<unsigned>(wd.wd_)));
+  format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%a}"), wd) :
+  format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{} is not a valid weekday"),
+         static_cast<unsigned>(wd.@\exposid{wd_}@)));
 \end{codeblock}
 \end{itemdescr}
 
@@ -5279,8 +5283,8 @@ that value will be assigned to \tcode{*offset} if \tcode{offset} is non-null.
 \begin{codeblock}
 namespace std::chrono {
   class weekday_indexed {
-    chrono::weekday  wd_;       // \expos
-    unsigned char    index_;    // \expos
+    chrono::weekday  @\exposid{wd_}@;       // \expos
+    unsigned char    @\exposid{index_}@;    // \expos
 
   public:
     weekday_indexed() = default;
@@ -5326,7 +5330,7 @@ constexpr weekday_indexed(const chrono::weekday& wd, unsigned index) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{wd_} with \tcode{wd} and \tcode{index_} with \tcode{index}.
+Initializes \exposid{wd_} with \tcode{wd} and \exposid{index_} with \tcode{index}.
 The values held are unspecified if \tcode{!wd.ok()} or \tcode{index} is not in the range \crange{0}{7}.
 \end{itemdescr}
 
@@ -5338,7 +5342,7 @@ constexpr chrono::weekday weekday() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wd_}.
+\exposid{wd_}.
 \end{itemdescr}
 
 \indexlibrarymember{index}{weekday_indexed}%
@@ -5349,7 +5353,7 @@ constexpr unsigned index() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{index_}.
+\exposid{index_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{weekday_indexed}%
@@ -5360,7 +5364,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wd_.ok() \&\& 1 <= index_ \&\& index_ <= 5}.
+\tcode{\exposid{wd_}.ok() \&\& 1 <= \exposid{index_} \&\& \exposid{index_} <= 5}.
 \end{itemdescr}
 
 \rSec3[time.cal.wdidx.nonmembers]{Non-member functions}
@@ -5390,8 +5394,8 @@ Equivalent to:
 \begin{codeblock}
 auto i = wdi.index();
 return os << (i >= 1 && i <= 5 ?
-  format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}[{}]"), wdi.weekday(), i) :
-  format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}[{} is not a valid index]"),
+  format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L}[{}]"), wdi.weekday(), i) :
+  format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L}[{} is not a valid index]"),
          wdi.weekday(), i));
 \end{codeblock}
 \end{itemdescr}
@@ -5404,7 +5408,7 @@ return os << (i >= 1 && i <= 5 ?
 \begin{codeblock}
 namespace std::chrono {
   class weekday_last {
-    chrono::weekday wd_;                // \expos
+    chrono::weekday @\exposid{wd_}@;                // \expos
 
   public:
     constexpr explicit weekday_last(const chrono::weekday& wd) noexcept;
@@ -5443,7 +5447,7 @@ constexpr explicit weekday_last(const chrono::weekday& wd) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{wd_} with \tcode{wd}.
+Initializes \exposid{wd_} with \tcode{wd}.
 \end{itemdescr}
 
 \indexlibrarymember{weekday_last}{weekday}%
@@ -5454,7 +5458,7 @@ constexpr chrono::weekday weekday() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wd_}.
+\exposid{wd_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{weekday_last}%
@@ -5465,7 +5469,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wd_.ok()}.
+\tcode{\exposid{wd_}.ok()}.
 \end{itemdescr}
 
 \rSec3[time.cal.wdlast.nonmembers]{Non-member functions}
@@ -5493,7 +5497,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}[last]"), wdl.weekday());
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L}[last]"), wdl.weekday());
 \end{codeblock}
 \end{itemdescr}
 
@@ -5505,8 +5509,8 @@ return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}[l
 \begin{codeblock}
 namespace std::chrono {
   class month_day {
-    chrono::month m_;           // \expos
-    chrono::day   d_;           // \expos
+    chrono::month @\exposid{m_}@;           // \expos
+    chrono::day   @\exposid{d_}@;           // \expos
 
   public:
     month_day() = default;
@@ -5538,7 +5542,7 @@ constexpr month_day(const chrono::month& m, const chrono::day& d) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{m_} with \tcode{m}, and \tcode{d_} with \tcode{d}.
+Initializes \exposid{m_} with \tcode{m}, and \exposid{d_} with \tcode{d}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{month_day}%
@@ -5549,7 +5553,7 @@ constexpr chrono::month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{day}{month_day}%
@@ -5560,7 +5564,7 @@ constexpr chrono::day day() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{d_}.
+\exposid{d_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{month_day}%
@@ -5572,11 +5576,11 @@ constexpr bool ok() const noexcept;
 \pnum
 \returns
 \tcode{true} if
-\tcode{m_.ok()} is \tcode{true},
-\tcode{1d <= d_}, and
-\tcode{d_} is less than or equal to the number of days in month \tcode{m_};
+\tcode{\exposid{m_}.ok()} is \tcode{true},
+\tcode{1d <= \exposid{d_}}, and
+\exposid{d_} is less than or equal to the number of days in month \exposid{m_};
 otherwise returns \tcode{false}.
-When \tcode{m_ == February},
+When \tcode{\exposid{m_} == February},
 the number of days is considered to be 29.
 \end{itemdescr}
 
@@ -5620,7 +5624,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}/{}"),
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L}/{}"),
                     md.month(), md.day());
 \end{codeblock}
 \end{itemdescr}
@@ -5660,7 +5664,7 @@ that value will be assigned to \tcode{*offset} if \tcode{offset} is non-null.
 \begin{codeblock}
 namespace std::chrono {
   class month_day_last {
-    chrono::month m_;                   // \expos
+    chrono::month @\exposid{m_}@;                   // \expos
 
   public:
     constexpr explicit month_day_last(const chrono::month& m) noexcept;
@@ -5698,7 +5702,7 @@ constexpr explicit month_day_last(const chrono::month& m) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{m_} with \tcode{m}.
+Initializes \exposid{m_} with \tcode{m}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{month_day_last}%
@@ -5709,7 +5713,7 @@ constexpr month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{month_day_last}%
@@ -5720,7 +5724,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_.ok()}.
+\tcode{\exposid{m_}.ok()}.
 \end{itemdescr}
 
 \indexlibrarymember{operator==}{month_day_last}%
@@ -5757,7 +5761,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}/last"), mdl.month());
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L}/last"), mdl.month());
 \end{codeblock}
 \end{itemdescr}
 
@@ -5769,8 +5773,8 @@ return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}/l
 \begin{codeblock}
 namespace std::chrono {
   class month_weekday {
-    chrono::month           m_;         // \expos
-    chrono::weekday_indexed wdi_;       // \expos
+    chrono::month           @\exposid{m_}@;         // \expos
+    chrono::weekday_indexed @\exposid{wdi_}@;       // \expos
   public:
     constexpr month_weekday(const chrono::month& m, const chrono::weekday_indexed& wdi) noexcept;
 
@@ -5809,7 +5813,7 @@ constexpr month_weekday(const chrono::month& m, const chrono::weekday_indexed& w
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{m_} with \tcode{m}, and \tcode{wdi_} with \tcode{wdi}.
+Initializes \exposid{m_} with \tcode{m}, and \exposid{wdi_} with \tcode{wdi}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{month_weekday}%
@@ -5820,7 +5824,7 @@ constexpr chrono::month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{weekday_indexed}{month_weekday}%
@@ -5831,7 +5835,7 @@ constexpr chrono::weekday_indexed weekday_indexed() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wdi_}.
+\exposid{wdi_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{month_weekday}%
@@ -5842,7 +5846,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_.ok() \&\& wdi_.ok()}.
+\tcode{\exposid{m_}.ok() \&\& \exposid{wdi_}.ok()}.
 \end{itemdescr}
 
 \rSec3[time.cal.mwd.nonmembers]{Non-member functions}
@@ -5870,7 +5874,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}/{:L}"),
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L}/{:L}"),
                     mwd.month(), mwd.weekday_indexed());
 \end{codeblock}
 \end{itemdescr}
@@ -5883,8 +5887,8 @@ return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}/{
 \begin{codeblock}
 namespace std::chrono {
   class month_weekday_last {
-    chrono::month        m_;    // \expos
-    chrono::weekday_last wdl_;  // \expos
+    chrono::month        @\exposid{m_}@;    // \expos
+    chrono::weekday_last @\exposid{wdl_}@;  // \expos
   public:
     constexpr month_weekday_last(const chrono::month& m,
                                  const chrono::weekday_last& wdl) noexcept;
@@ -5925,7 +5929,7 @@ constexpr month_weekday_last(const chrono::month& m,
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{m_} with \tcode{m}, and \tcode{wdl_} with \tcode{wdl}.
+Initializes \exposid{m_} with \tcode{m}, and \exposid{wdl_} with \tcode{wdl}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{month_weekday_last}%
@@ -5936,7 +5940,7 @@ constexpr chrono::month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{weekday_last}{month_weekday_last}%
@@ -5947,7 +5951,7 @@ constexpr chrono::weekday_last weekday_last() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wdl_}.
+\exposid{wdl_}.
 \end{itemdescr}
 
 \indexlibrarymember{ok}{month_weekday_last}%
@@ -5958,7 +5962,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_.ok() \&\& wdl_.ok()}.
+\tcode{\exposid{m_}.ok() \&\& \exposid{wdl_}.ok()}.
 \end{itemdescr}
 
 \rSec3[time.cal.mwdlast.nonmembers]{Non-member functions}
@@ -5986,7 +5990,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}/{:L}"),
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L}/{:L}"),
                     mwdl.month(), mwdl.weekday_last());
 \end{codeblock}
 \end{itemdescr}
@@ -5999,8 +6003,8 @@ return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L}/{
 \begin{codeblock}
 namespace std::chrono {
   class year_month {
-    chrono::year  y_;           // \expos
-    chrono::month m_;           // \expos
+    chrono::year  @\exposid{y_}@;           // \expos
+    chrono::month @\exposid{m_}@;           // \expos
 
   public:
     year_month() = default;
@@ -6039,7 +6043,7 @@ constexpr year_month(const chrono::year& y, const chrono::month& m) noexcept;
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{y_} with \tcode{y}, and \tcode{m_} with \tcode{m}.
+Initializes \exposid{y_} with \tcode{y}, and \exposid{m_} with \tcode{m}.
 \end{itemdescr}
 
 \indexlibrarymember{year}{year_month}%
@@ -6050,7 +6054,7 @@ constexpr chrono::year year() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_}.
+\exposid{y_}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{year_month}%
@@ -6061,7 +6065,7 @@ constexpr chrono::month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{operator+=}{year_month}%
@@ -6148,7 +6152,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_.ok() \&\& m_.ok()}.
+\tcode{\exposid{y_}.ok() \&\& \exposid{m_}.ok()}.
 \end{itemdescr}
 
 \rSec3[time.cal.ym.nonmembers]{Non-member functions}
@@ -6300,7 +6304,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{}/{:L}"),
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{}/{:L}"),
                     ym.year(), ym.month());
 \end{codeblock}
 \end{itemdescr}
@@ -6342,9 +6346,9 @@ that value will be assigned to \tcode{*offset} if \tcode{offset} is non-null.
 \begin{codeblock}
 namespace std::chrono {
   class year_month_day {
-    chrono::year  y_;           // \expos
-    chrono::month m_;           // \expos
-    chrono::day   d_;           // \expos
+    chrono::year  @\exposid{y_}@;           // \expos
+    chrono::month @\exposid{m_}@;           // \expos
+    chrono::day   @\exposid{d_}@;           // \expos
 
   public:
     year_month_day() = default;
@@ -6397,9 +6401,9 @@ constexpr year_month_day(const chrono::year& y, const chrono::month& m,
 \pnum
 \effects
 Initializes
-\tcode{y_} with \tcode{y},
-\tcode{m_} with \tcode{m}, and
-\tcode{d_} with \tcode{d}.
+\exposid{y_} with \tcode{y},
+\exposid{m_} with \tcode{m}, and
+\exposid{d_} with \tcode{d}.
 \end{itemdescr}
 
 \indexlibraryctor{year_month_day}%
@@ -6411,9 +6415,9 @@ constexpr year_month_day(const year_month_day_last& ymdl) noexcept;
 \pnum
 \effects
 Initializes
-\tcode{y_} with \tcode{ymdl.year()},
-\tcode{m_} with \tcode{ymdl.month()}, and
-\tcode{d_} with \tcode{ymdl.day()}.
+\exposid{y_} with \tcode{ymdl.year()},
+\exposid{m_} with \tcode{ymdl.month()}, and
+\exposid{d_} with \tcode{ymdl.day()}.
 \begin{note}
 This conversion from \tcode{year_month_day_last} to \tcode{year_month_day}
 can be more efficient than converting a \tcode{year_month_day_last} to a \tcode{sys_days},
@@ -6535,7 +6539,7 @@ constexpr chrono::year year() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_}.
+\exposid{y_}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{year_month_day}%
@@ -6546,7 +6550,7 @@ constexpr chrono::month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{day}{year_month_day}%
@@ -6557,7 +6561,7 @@ constexpr chrono::day day() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{d_}.
+\exposid{d_}.
 \end{itemdescr}
 
 \indexlibrarymember{operator sys_days}{year_month_day}%
@@ -6572,8 +6576,8 @@ If \tcode{ok()},
 returns a \tcode{sys_days}
 holding a count of days from the \tcode{sys_days} epoch to \tcode{*this}
 (a negative value if \tcode{*this} represents a date prior to the \tcode{sys_days} epoch).
-Otherwise, if \tcode{y_.ok() \&\& m_.ok()} is \tcode{true},
-returns \tcode{sys_days\{y_/m_/1d\} + (d_ - 1d)}.
+Otherwise, if \tcode{\exposid{y_}.ok() \&\& \exposid{m_}.ok()} is \tcode{true},
+returns \tcode{sys_days\{\exposid{y_}/\exposid{m_}/1d\} + (\exposid{d_} - 1d)}.
 Otherwise the value returned is unspecified.
 
 \pnum
@@ -6611,9 +6615,9 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-If \tcode{y_.ok()} is \tcode{true},
-and \tcode{m_.ok()} is \tcode{true},
-and \tcode{d_} is in the range \crange{1d}{(y_/m_/last).day()},
+If \tcode{\exposid{y_}.ok()} is \tcode{true},
+and \tcode{\exposid{m_}.ok()} is \tcode{true},
+and \exposid{d_} is in the range \crange{1d}{(\exposid{y_}/\exposid{m_}/last).day()},
 then returns \tcode{true}; otherwise returns \tcode{false}.
 \end{itemdescr}
 
@@ -6764,8 +6768,8 @@ template<class charT, class traits>
 Equivalent to:
 \begin{codeblock}
 return os << (ymd.ok() ?
-  format(@\placeholder{STATICALLY-WIDEN}@<charT>("{:%F}"), ymd) :
-  format(@\placeholder{STATICALLY-WIDEN}@<charT>("{:%F} is not a valid date"), ymd));
+  format(@\exposid{STATICALLY-WIDEN}@<charT>("{:%F}"), ymd) :
+  format(@\exposid{STATICALLY-WIDEN}@<charT>("{:%F} is not a valid date"), ymd));
 \end{codeblock}
 \end{itemdescr}
 
@@ -6806,8 +6810,8 @@ that value will be assigned to \tcode{*offset} if \tcode{offset} is non-null.
 \begin{codeblock}
 namespace std::chrono {
   class year_month_day_last {
-    chrono::year           y_;          // \expos
-    chrono::month_day_last mdl_;        // \expos
+    chrono::year           @\exposid{y_}@;          // \expos
+    chrono::month_day_last @\exposid{mdl_}@;        // \expos
 
   public:
     constexpr year_month_day_last(const chrono::year& y,
@@ -6857,7 +6861,7 @@ constexpr year_month_day_last(const chrono::year& y,
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{y_} with \tcode{y} and \tcode{mdl_} with \tcode{mdl}.
+Initializes \exposid{y_} with \tcode{y} and \exposid{mdl_} with \tcode{mdl}.
 \end{itemdescr}
 
 \indexlibrarymember{operator+=}{year_month_day_last}%
@@ -6944,7 +6948,7 @@ constexpr chrono::year year() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_}.
+\exposid{y_}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{year_month_day_last}%
@@ -6955,7 +6959,7 @@ constexpr chrono::month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{mdl_.month()}.
+\tcode{\exposid{mdl_}.month()}.
 \end{itemdescr}
 
 \indexlibrarymember{month_day_last}{year_month_day_last}%
@@ -6966,7 +6970,7 @@ constexpr chrono::month_day_last month_day_last() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{mdl_}.
+\exposid{mdl_}.
 \end{itemdescr}
 
 \indexlibrarymember{day}{year_month_day_last}%
@@ -7019,7 +7023,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_.ok() \&\& mdl_.ok()}.
+\tcode{\exposid{y_}.ok() \&\& \exposid{mdl_}.ok()}.
 \end{itemdescr}
 
 \rSec3[time.cal.ymdlast.nonmembers]{Non-member functions}
@@ -7159,7 +7163,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{}/{:L}"),
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{}/{:L}"),
                     ymdl.year(), ymdl.month_day_last());
 \end{codeblock}
 \end{itemdescr}
@@ -7172,9 +7176,9 @@ return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{}/{:L
 \begin{codeblock}
 namespace std::chrono {
   class year_month_weekday {
-    chrono::year            y_;         // \expos
-    chrono::month           m_;         // \expos
-    chrono::weekday_indexed wdi_;       // \expos
+    chrono::year            @\exposid{y_}@;         // \expos
+    chrono::month           @\exposid{m_}@;         // \expos
+    chrono::weekday_indexed @\exposid{wdi_}@;       // \expos
 
   public:
     year_month_weekday() = default;
@@ -7227,7 +7231,7 @@ constexpr year_month_weekday(const chrono::year& y, const chrono::month& m,
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{y_} with \tcode{y}, \tcode{m_} with \tcode{m}, and \tcode{wdi_} with \tcode{wdi}.
+Initializes \exposid{y_} with \tcode{y}, \exposid{m_} with \tcode{m}, and \exposid{wdi_} with \tcode{wdi}.
 \end{itemdescr}
 
 \indexlibraryctor{year_month_weekday}%
@@ -7343,7 +7347,7 @@ constexpr chrono::year year() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_}.
+\exposid{y_}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{year_month_weekday}%
@@ -7354,7 +7358,7 @@ constexpr chrono::month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{weekday}{year_month_weekday}%
@@ -7365,7 +7369,7 @@ constexpr chrono::weekday weekday() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wdi_.weekday()}.
+\tcode{\exposid{wdi_}.weekday()}.
 \end{itemdescr}
 
 \indexlibrarymember{index}{year_month_weekday}%
@@ -7376,7 +7380,7 @@ constexpr unsigned index() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wdi_.index()}.
+\tcode{\exposid{wdi_}.index()}.
 \end{itemdescr}
 
 \indexlibrarymember{weekday_indexed}{year_month_weekday}%
@@ -7387,7 +7391,7 @@ constexpr chrono::weekday_indexed weekday_indexed() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wdi_}.
+\exposid{wdi_}.
 \end{itemdescr}
 
 \indexlibrarymember{operator sys_days}{year_month_weekday}%
@@ -7398,7 +7402,7 @@ constexpr operator sys_days() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-If \tcode{y_.ok() \&\& m_.ok() \&\& wdi_.weekday().ok()},
+If \tcode{\exposid{y_}.ok() \&\& \exposid{m_}.ok() \&\& \exposid{wdi_}.weekday().ok()},
 returns a \tcode{sys_days} that
 represents the date \tcode{(index() - 1) * 7} days after
 the first \tcode{weekday()} of \tcode{year()/month()}.
@@ -7429,9 +7433,9 @@ constexpr bool ok() const noexcept;
 \pnum
 \returns
 If any of
-\tcode{y_.ok()},
-\tcode{m_.ok()}, or
-\tcode{wdi_.ok()}
+\tcode{\exposid{y_}.ok()},
+\tcode{\exposid{m_}.ok()}, or
+\tcode{\exposid{wdi_}.ok()}
 is \tcode{false}, returns \tcode{false}.
 Otherwise, if \tcode{*this} represents a valid date,
 returns \tcode{true}.
@@ -7555,7 +7559,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{}/{:L}/{:L}"),
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{}/{:L}/{:L}"),
                     ymwd.year(), ymwd.month(), ymwd.weekday_indexed());
 \end{codeblock}
 \end{itemdescr}
@@ -7568,9 +7572,9 @@ return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{}/{:L
 \begin{codeblock}
 namespace std::chrono {
   class year_month_weekday_last {
-    chrono::year         y_;    // \expos
-    chrono::month        m_;    // \expos
-    chrono::weekday_last wdl_;  // \expos
+    chrono::year         @\exposid{y_}@;    // \expos
+    chrono::month        @\exposid{m_}@;    // \expos
+    chrono::weekday_last @\exposid{wdl_}@;  // \expos
 
   public:
     constexpr year_month_weekday_last(const chrono::year& y, const chrono::month& m,
@@ -7620,7 +7624,7 @@ constexpr year_month_weekday_last(const chrono::year& y, const chrono::month& m,
 \begin{itemdescr}
 \pnum
 \effects
-Initializes \tcode{y_} with \tcode{y}, \tcode{m_} with \tcode{m}, and \tcode{wdl_} with \tcode{wdl}.
+Initializes \exposid{y_} with \tcode{y}, \exposid{m_} with \tcode{m}, and \exposid{wdl_} with \tcode{wdl}.
 \end{itemdescr}
 
 \indexlibrarymember{operator+=}{year_month_weekday_last}%
@@ -7707,7 +7711,7 @@ constexpr chrono::year year() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_}.
+\exposid{y_}.
 \end{itemdescr}
 
 \indexlibrarymember{month}{year_month_weekday_last}%
@@ -7718,7 +7722,7 @@ constexpr chrono::month month() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m_}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{weekday}{year_month_weekday_last}%
@@ -7729,7 +7733,7 @@ constexpr chrono::weekday weekday() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wdl_.weekday()}.
+\tcode{\exposid{wdl_}.weekday()}.
 \end{itemdescr}
 
 \indexlibrarymember{weekday_last}{year_month_weekday_last}%
@@ -7740,7 +7744,7 @@ constexpr chrono::weekday_last weekday_last() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{wdl_}.
+\exposid{wdl_}.
 \end{itemdescr}
 
 \indexlibrarymember{operator sys_days}{year_month_weekday_last}%
@@ -7776,7 +7780,7 @@ constexpr bool ok() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{y_.ok() \&\& m_.ok() \&\& wdl_.ok()}.
+\tcode{\exposid{y_}.ok() \&\& \exposid{m_}.ok() \&\& \exposid{wdl_}.ok()}.
 \end{itemdescr}
 
 \rSec3[time.cal.ymwdlast.nonmembers]{Non-member functions}
@@ -7903,7 +7907,7 @@ template<class charT, class traits>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{}/{:L}/{:L}"),
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{}/{:L}/{:L}"),
                     ymwdl.year(), ymwdl.month(), ymwdl.weekday_last());
 \end{codeblock}
 \end{itemdescr}
@@ -8424,11 +8428,11 @@ namespace std::chrono {
     constexpr precision to_duration() const noexcept;
 
   private:
-    bool            is_neg;     // \expos
-    chrono::hours   h;          // \expos
-    chrono::minutes m;          // \expos
-    chrono::seconds s;          // \expos
-    precision       ss;         // \expos
+    bool            @\exposid{is-neg}@;     // \expos
+    chrono::hours   @\exposid{h_}@;         // \expos
+    chrono::minutes @\exposid{m_}@;         // \expos
+    chrono::seconds @\exposid{s_}@;         // \expos
+    precision       @\exposid{ss_}@;        // \expos
   };
 }
 \end{codeblock}
@@ -8530,23 +8534,23 @@ Constructs an object of type \tcode{hh_mm_ss}
 which represents the \tcode{Duration d} with precision \tcode{precision}.
 \begin{itemize}
 \item
-  Initializes \tcode{is_neg} with \tcode{d < Duration::zero()}.
+  Initializes \exposid{is-neg} with \tcode{d < Duration::zero()}.
   Let \tcode{\placeholder{ABS_D}} represent
-  \tcode{-d} if \tcode{is_neg} is \tcode{true} and
+  \tcode{-d} if \exposid{is-neg} is \tcode{true} and
   \tcode{d} otherwise.
 \item
-  Initializes \tcode{h} with \tcode{duration_cast<chrono::hours>(\placeholder{ABS_D})}.
+  Initializes \exposid{h_} with \tcode{duration_cast<chrono::hours>(\placeholder{ABS_D})}.
 \item
-  Initializes \tcode{m}
+  Initializes \exposid{m_}
   with \tcode{duration_cast<chrono::minutes>(\placeholder{ABS_D} - hours())}.
 \item
-  Initializes \tcode{s}
+  Initializes \exposid{s_}
   with \tcode{duration_cast<chrono::seconds>(\placeholder{ABS_D} - hours() - minutes())}.
 \item
   If \tcode{treat_as_floating_point_v<precision::rep>} is \tcode{true},
-  initializes \tcode{ss} with \tcode{\placeholder{ABS_D} - hours() - minutes() - seconds()}.
-  Otherwise, initializes \tcode{ss}
-  with \tcode{duration_cast<precision>(\placeholder{ABS_D} - hours() - minutes() - seconds())}.
+  initializes \exposid{ss_} with \tcode{\placeholder{ABS_D}\linebreak{} - hours() - minutes() - seconds()}.
+  Otherwise, initializes \exposid{ss_}
+  with \tcode{duration_cast<preci\-sion>(\placeholder{ABS_D} - hours() - minutes() - seconds())}.
 \end{itemize}
 \begin{note}
 When \tcode{precision::rep} is integral and
@@ -8569,7 +8573,7 @@ constexpr bool is_negative() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{is_neg}.
+\exposid{is-neg}.
 \end{itemdescr}
 
 \indexlibrarymember{hours}{hh_mm_ss}%
@@ -8580,7 +8584,7 @@ constexpr chrono::hours hours() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{h}.
+\exposid{h_}.
 \end{itemdescr}
 
 \indexlibrarymember{minutes}{hh_mm_ss}%
@@ -8591,7 +8595,7 @@ constexpr chrono::minutes minutes() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{m}.
+\exposid{m_}.
 \end{itemdescr}
 
 \indexlibrarymember{seconds}{hh_mm_ss}%
@@ -8602,7 +8606,7 @@ constexpr chrono::seconds seconds() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{s}.
+\exposid{s_}.
 \end{itemdescr}
 
 \indexlibrarymember{subseconds}{hh_mm_ss}%
@@ -8613,7 +8617,7 @@ constexpr precision subseconds() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{ss}.
+\exposid{ss_}.
 \end{itemdescr}
 
 \indexlibrarymember{to_duration}{hh_mm_ss}%
@@ -8624,8 +8628,8 @@ constexpr precision to_duration() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-If \tcode{is_neg}, returns \tcode{-(h + m + s + ss)},
-otherwise returns \tcode{h + m + s + ss}.
+If \exposid{is-neg}, returns \tcode{-(\exposid{h_} + \exposid{m_} + \exposid{s_} + \exposid{ss_})},
+otherwise returns \tcode{\exposid{h_} + \exposid{m_} + \exposid{s_} + \exposid{ss_}}.
 \end{itemdescr}
 
 \indexlibrarymember{operator precision}{hh_mm_ss}%
@@ -8652,7 +8656,7 @@ template<class charT, class traits, class Duration>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%T}"), hms);
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%T}"), hms);
 \end{codeblock}
 
 \pnum
@@ -9638,10 +9642,10 @@ namespace std::chrono {
     using duration = common_type_t<Duration, seconds>;
 
   private:
-    TimeZonePtr        zone_;                   // \expos
-    sys_time<duration> tp_;                     // \expos
+    TimeZonePtr        @\exposid{zone_}@;                   // \expos
+    sys_time<duration> @\exposid{tp_}@;                     // \expos
 
-    using traits = zoned_traits<TimeZonePtr>;   // \expos
+    using @\exposid{traits_}@ = zoned_traits<TimeZonePtr>;  // \expos
 
   public:
     zoned_time();
@@ -9748,12 +9752,12 @@ zoned_time();
 \begin{itemdescr}
 \pnum
 \constraints
-\tcode{traits::default_zone()} is a well-formed expression.
+\tcode{\exposid{traits_}::default_zone()} is a well-formed expression.
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{traits::default_zone()} and
-default constructs \tcode{tp_}.
+Initializes \exposid{zone_} with \tcode{\exposid{traits_}::default_zone()} and
+default constructs \exposid{tp_}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9763,11 +9767,11 @@ zoned_time(const sys_time<Duration>& st);
 \begin{itemdescr}
 \pnum
 \constraints
-\tcode{traits::default_zone()} is a well-formed expression.
+\tcode{\exposid{traits_}::default_zone()} is a well-formed expression.
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{traits::default_zone()} and \tcode{tp_} with \tcode{st}.
+Initializes \exposid{zone_} with \tcode{\exposid{traits_}::default_zone()} and \exposid{tp_} with \tcode{st}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9781,8 +9785,8 @@ explicit zoned_time(TimeZonePtr z);
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{std::move(z)} and
-default constructs \tcode{tp_}.
+Initializes \exposid{zone_} with \tcode{std::move(z)} and
+default constructs \exposid{tp_}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9792,13 +9796,13 @@ explicit zoned_time(string_view name);
 \begin{itemdescr}
 \pnum
 \constraints
-\tcode{traits::locate_zone(string_view\{\})} is a well-formed expression and
-\tcode{zoned_time} is constructible from the return type of \tcode{traits::locate_zone(string_view\{\})}.
+\tcode{\exposid{traits_}::locate_zone(string_view\{\})} is a well-formed expression and
+\tcode{zoned_time} is constructible from the return type of \tcode{\exposid{traits_}::locate_zone(string_view\{\})}.
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{traits::locate_zone(name)} and
-default constructs \tcode{tp_}.
+Initializes \exposid{zone_} with \tcode{\exposid{traits_}::locate_zone(name)} and
+default constructs \exposid{tp_}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9813,7 +9817,7 @@ template<class Duration2>
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{y.zone_} and \tcode{tp_} with \tcode{y.tp_}.
+Initializes \exposid{zone_} with \tcode{y.\exposid{zone_}} and \exposid{tp_} with \tcode{y.\exposid{tp_}}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9827,7 +9831,7 @@ zoned_time(TimeZonePtr z, const sys_time<Duration>& st);
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{std::move(z)} and \tcode{tp_} with \tcode{st}.
+Initializes \exposid{zone_} with \tcode{std::move(z)} and \exposid{tp_} with \tcode{st}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9837,11 +9841,11 @@ zoned_time(string_view name, const sys_time<Duration>& st);
 \begin{itemdescr}
 \pnum
 \constraints
-\tcode{zoned_time} is constructible from the return type of \tcode{traits::locate_zone(name)} and \tcode{st}.
+\tcode{zoned_time} is constructible from the return type of \tcode{\exposid{traits_}::locate_zone(name)} and \tcode{st}.
 
 \pnum
 \effects
-Equivalent to construction with \tcode{\{traits::locate_zone(name), st\}}.
+Equivalent to construction with \tcode{\{\exposid{traits_}::locate_zone(name), st\}}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9864,7 +9868,7 @@ is \tcode{true}.
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{std::move(z)} and \tcode{tp_} with \tcode{zone_->to_sys(tp)}.
+Initializes \exposid{zone_} with \tcode{std::move(z)} and \exposid{tp_} with \tcode{\exposid{zone_}->to_sys(tp)}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9874,11 +9878,11 @@ zoned_time(string_view name, const local_time<Duration>& tp);
 \begin{itemdescr}
 \pnum
 \constraints
-\tcode{zoned_time} is constructible from the return type of \tcode{traits::locate_zone(name)} and \tcode{tp}.
+\tcode{zoned_time} is constructible from the return type of \tcode{\exposid{traits_}::locate_zone(name)} and \tcode{tp}.
 
 \pnum
 \effects
-Equivalent to construction with \tcode{\{traits::locate_zone(name), tp\}}.
+Equivalent to construction with \tcode{\{\exposid{traits_}::locate_zone(name), tp\}}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9901,7 +9905,7 @@ is \tcode{true}.
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{std::move(z)} and \tcode{tp_} with \tcode{zone_->to_sys(tp, c)}.
+Initializes \exposid{zone_} with \tcode{std::move(z)} and \exposid{tp_} with \tcode{\exposid{zone_}->to_sys(tp, c)}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9912,11 +9916,11 @@ zoned_time(string_view name, const local_time<Duration>& tp, choose c);
 \pnum
 \constraints
 \tcode{zoned_time} is constructible from
-the return type of \tcode{traits::locate_zone(name)}, \tcode{local_time<Duration>}, and \tcode{choose}.
+the return type of \tcode{\exposid{traits_}::locate_zone(name)}, \tcode{local_time<Duration>}, and \tcode{choose}.
 
 \pnum
 \effects
-Equivalent to construction with \tcode{\{traits::locate_zone(name), tp, c\}}.
+Equivalent to construction with \tcode{\{\exposid{traits_}::locate_zone(name), tp, c\}}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9935,7 +9939,7 @@ template<class Duration2, class TimeZonePtr2>
 
 \pnum
 \effects
-Initializes \tcode{zone_} with \tcode{std::move(z)} and \tcode{tp_} with \tcode{y.tp_}.
+Initializes \exposid{zone_} with \tcode{std::move(z)} and \exposid{tp_} with \tcode{y.\exposid{tp_}}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9971,12 +9975,12 @@ template<class Duration2, class TimeZonePtr2>
 \pnum
 \constraints
 \tcode{zoned_time} is constructible from
-the return type of \tcode{traits::locate_zone(name)} and
+the return type of \tcode{\exposid{traits_}::locate_zone(name)} and
 the type \tcode{zoned_time<Duration2, TimeZonePtr2>}.
 
 \pnum
 \effects
-Equivalent to construction with \tcode{\{traits::locate_zone(name), y\}}.
+Equivalent to construction with \tcode{\{\exposid{traits_}::locate_zone(name), y\}}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -9988,13 +9992,13 @@ template<class Duration2, class TimeZonePtr2>
 \pnum
 \constraints
 \tcode{zoned_time} is constructible from
-the return type of \tcode{traits::locate_zone(name)},
+the return type of \tcode{\exposid{traits_}::locate_zone(name)},
 the type \tcode{zoned_time<Duration2, TimeZonePtr2>}, and
 the type \tcode{choose}.
 
 \pnum
 \effects
-Equivalent to construction with \tcode{\{traits::locate_zone(name), y, c\}}.
+Equivalent to construction with \tcode{\{\exposid{traits_}::locate_zone(name), y, c\}}.
 
 \pnum
 \begin{note}
@@ -10067,7 +10071,7 @@ TimeZonePtr get_time_zone() const;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{zone_}.
+\exposid{zone_}.
 \end{itemdescr}
 
 \indexlibrarymember{get_local_time}{zoned_time}%
@@ -10078,7 +10082,7 @@ local_time<duration> get_local_time() const;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{zone_->to_local(tp_)}.
+\tcode{\exposid{zone_}->to_local(\exposid{tp_})}.
 \end{itemdescr}
 
 \indexlibrarymember{get_sys_time}{zoned_time}%
@@ -10089,7 +10093,7 @@ sys_time<duration> get_sys_time() const;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{tp_}.
+\exposid{tp_}.
 \end{itemdescr}
 
 \indexlibrarymember{get_info}{zoned_time}%
@@ -10100,7 +10104,7 @@ sys_info get_info() const;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{zone_->get_info(tp_)}.
+\tcode{\exposid{zone_}->get_info(\exposid{tp_})}.
 \end{itemdescr}
 
 \rSec3[time.zone.zonedtime.nonmembers]{Non-member functions}
@@ -10115,7 +10119,7 @@ template<class Duration1, class Duration2, class TimeZonePtr>
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{x.zone_ == y.zone_ \&\& x.tp_ == y.tp_}.
+\tcode{x.\exposid{zone_} == y.\exposid{zone_} \&\& x.\exposid{tp_} == y.\exposid{tp_}}.
 \end{itemdescr}
 
 \indexlibrarymember{operator<<}{zoned_time}%
@@ -10131,7 +10135,7 @@ template<class charT, class traits, class Duration, class TimeZonePtr>
 \effects
 Equivalent to:
 \begin{codeblock}
-return os << format(os.getloc(), @\placeholder{STATICALLY-WIDEN}@<charT>("{:L%F %T %Z}"), t);
+return os << format(os.getloc(), @\exposid{STATICALLY-WIDEN}@<charT>("{:L%F %T %Z}"), t);
 \end{codeblock}
 \end{itemdescr}
 
@@ -10788,11 +10792,17 @@ The modified command \tcode{\%EX} produces
 the locale's alternate time representation.
 \\ \rowsep
 \tcode{\%y} &
-The last two decimal digits of the year.
+The last two decimal digits of the year,
+regardless of the sign of the year.
 If the result is a single digit, it is prefixed by \tcode{0}.
 The modified command \tcode{\%Oy} produces the locale's alternative representation.
 The modified command \tcode{\%Ey} produces the locale's alternative representation
 of offset from \tcode{\%EC} (year only).
+\begin{tailexample}
+\begin{codeblock}
+cout << format("{:%C %y}", -1976y);     // prints \tcode{-20 76}
+\end{codeblock}
+\end{tailexample}
 \\ \rowsep
 \tcode{\%Y} &
 The year as a decimal number.
@@ -10966,17 +10976,17 @@ an exception of type \tcode{format_error} is thrown.
 
 \indexlibrary{local-time-format-t@\exposid{local-time-format-t}}%
 \begin{codeblock}
-template<class Duration> struct @\placeholder{local-time-format-t}@ {           // \expos
-  local_time<Duration> time;                                    // \expos
-  const string* abbrev;                                         // \expos
-  const seconds* offset_sec;                                    // \expos
+template<class Duration> struct @\exposid{local-time-format-t}@ {           // \expos
+  local_time<Duration> @\exposid{time_}@;                                   // \expos
+  const string* @\exposid{abbrev_}@;                                        // \expos
+  const seconds* @\exposid{offset-sec}@;                                    // \expos
 };
 \end{codeblock}
 
 \indexlibraryglobal{local_time_format}%
 \begin{itemdecl}
 template<class Duration>
-  @\placeholder{local-time-format-t}@<Duration>
+  @\exposid{local-time-format-t}@<Duration>
     local_time_format(local_time<Duration> time, const string* abbrev = nullptr,
                       const seconds* offset_sec = nullptr);
 \end{itemdecl}
@@ -10990,7 +11000,7 @@ template<class Duration>
 \indexlibrary{\idxcode{formatter}!specializations!chrono::local-time-format-t@\tcode{chrono::\exposid{local-time-format-t}}}%
 \begin{itemdecl}
 template<class Duration, class charT>
-  struct formatter<chrono::@\placeholder{local-time-format-t}@<Duration>, charT>;
+  struct formatter<chrono::@\exposid{local-time-format-t}@<Duration>, charT>;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -11004,16 +11014,16 @@ If the \fmtgrammarterm{chrono-specs} is omitted,
 the result is equivalent to using \tcode{\%F \%T \%Z} as
 the \fmtgrammarterm{chrono-specs}.
 If \tcode{\%Z} is used,
-it is replaced with \tcode{*f.abbrev}
-if \tcode{f.abbrev} is not a null pointer value.
+it is replaced with \tcode{*f.\exposid{abbrev_}}
+if \tcode{f.\exposid{abbrev_}} is not a null pointer value.
 If \tcode{\%Z} is used
-and \tcode{f.abbrev} is a null pointer value,
+and \tcode{f.\exposid{abbrev_}} is a null pointer value,
 an exception of type \tcode{format_error} is thrown.
 If \tcode{\%z} (or a modified variant of \tcode{\%z}) is used,
-it is formatted with the value of \tcode{*f.offset_sec}
-if \tcode{f.offset_sec} is not a null pointer value.
+it is formatted with the value of \tcode{*f.\exposid{offset-sec}}
+if \tcode{f.\exposid{offset-sec}} is not a null pointer value.
 If \tcode{\%z} (or a modified variant of \tcode{\%z}) is used
-and \tcode{f.offset_sec} is a null pointer value,
+and \tcode{f.\exposid{offset-sec}} is a null pointer value,
 then an exception of type \tcode{format_error} is thrown.
 \end{itemdescr}
 
@@ -11021,7 +11031,7 @@ then an exception of type \tcode{format_error} is thrown.
 \begin{codeblock}
 template<class Duration, class TimeZonePtr, class charT>
 struct formatter<chrono::zoned_time<Duration, TimeZonePtr>, charT>
-    : formatter<chrono::@\placeholder{local-time-format-t}@<common_type_t<Duration, seconds>>, charT> {
+    : formatter<chrono::@\exposid{local-time-format-t}@<common_type_t<Duration, seconds>>, charT> {
   template<class FormatContext>
     typename FormatContext::iterator
       format(const chrono::zoned_time<Duration, TimeZonePtr>& tp, FormatContext& ctx) const;
@@ -11041,7 +11051,7 @@ template<class FormatContext>
 Equivalent to:
 \begin{codeblock}
 sys_info info = tp.get_info();
-return formatter<chrono::@\placeholder{local-time-format-t}@<common_type_t<Duration, seconds>>, charT>::
+return formatter<chrono::@\exposid{local-time-format-t}@<common_type_t<Duration, seconds>>, charT>::
          format({tp.get_local_time(), &info.abbrev, &info.offset}, ctx);
 \end{codeblock}
 \end{itemdescr}
@@ -11465,7 +11475,8 @@ The locale's time representation.
 The modified command \tcode{\%EX} interprets the locale's alternate time representation.
 \\ \rowsep
 \tcode{\%y} &
-The last two decimal digits of the year.
+The last two decimal digits of the year,
+regardless of the sign of the year.
 If the century is not otherwise specified
 (e.g.,  with \tcode{\%C}),
 values in the range \crange{69}{99}
@@ -11478,6 +11489,12 @@ If \tcode{\placeholder{N}} is not specified, the default is 2.
 Leading zeroes are permitted but not required.
 The modified commands \tcode{\%Ey} and \tcode{\%Oy} interpret
 the locale's alternative representation.
+\begin{tailexample}
+\begin{codeblock}
+year y;
+istringstream{"-20 76"} >> parse("%3C %y", y);  // \tcode{y == -1976y} is \tcode{true}
+\end{codeblock}
+\end{tailexample}
 \\ \rowsep
 \tcode{\%Y} &
 The year as a decimal number.

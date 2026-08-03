@@ -35,6 +35,11 @@ Except as indicated, statements are executed in sequence\iref{intro.execution}.
 \begin{bnf}
 \nontermdef{condition}\br
     expression\br
+    condition-declaration
+\end{bnf}
+
+\begin{bnf}
+\nontermdef{condition-declaration}\br
     \opt{attribute-specifier-seq} decl-specifier-seq declarator brace-or-equal-initializer\br
     structured-binding-declaration initializer
 \end{bnf}
@@ -143,15 +148,15 @@ ill-formed. The value of the condition will be referred to as simply
 
 \pnum
 If a \grammarterm{condition} can be syntactically resolved
-as either an expression or a declaration,
+as either an \grammarterm{expression} or a \grammarterm{condition-declaration},
 it is interpreted as the latter.
 
 \pnum
-Let $D$ be any \grammarterm{condition} or \grammarterm{for-range-declaration}.
-In the \grammarterm{decl-specifier-seq} of $D$,
+For any \grammarterm{condition} or \grammarterm{for-range-declaration} $D$,
+each \grammarterm{decl-specifier}
+in the \grammarterm{decl-specifier-seq} of $D$,
 including that of any \grammarterm{structured-binding-declaration} of $D$,
-each
-\grammarterm{decl-specifier} shall be either a \grammarterm{type-specifier}
+shall be either a \grammarterm{type-specifier}
 or \keyword{constexpr}.
 
 \rSec1[stmt.label]{Label}%
@@ -262,7 +267,6 @@ is treated as if it were followed by a null statement.
 \pnum
 \begin{note}
 A compound statement defines a block scope\iref{basic.scope}.
-A declaration is a \grammarterm{statement}\iref{stmt.dcl}.
 \end{note}
 
 \rSec1[stmt.select]{Selection statements}%
@@ -320,7 +324,7 @@ In other words, the \keyword{else} is associated with the nearest un-elsed
 If the \keyword{if} statement is of the form \tcode{if constexpr},
 the value of the condition
 is contextually converted to \keyword{bool} and
-the converted expression shall be a constant expression\iref{expr.const};
+the converted expression shall be a constant expression\iref{expr.const.const};
 this
 form is called a \defn{constexpr if} statement. If the value of the
 converted condition is \tcode{false}, the first substatement is a
@@ -405,7 +409,7 @@ constexpr void f(bool b) {
 
 \pnum
 If a consteval if statement is evaluated in a context
-that is manifestly constant-evaluated\iref{expr.const},
+that is manifestly constant-evaluated\iref{expr.const.defns},
 the first substatement is executed.
 \begin{note}
 The first substatement is an immediate function context.
@@ -461,7 +465,7 @@ more case labels as follows:
 \keyword{case} constant-expression \terminal{:}
 \end{ncbnf}
 where the \grammarterm{constant-expression} shall be
-a converted constant expression\iref{expr.const} of the
+a converted constant expression\iref{expr.const.const} of the
 adjusted type of the switch condition. No two of the case constants in
 the same switch shall have the same value after conversion.
 
@@ -584,7 +588,7 @@ a \tcode{while}, \tcode{do}, or \tcode{for} statement
 (or \tcode{true}, if the \tcode{for} statement has no \grammarterm{expression}).
 A \defnadj{trivial infinite}{loop} is a trivially empty iteration statement
 for which the converted controlling expression is a constant expression,
-when interpreted as a \grammarterm{constant-expression}\iref{expr.const}, and
+when interpreted as a \grammarterm{constant-expression}\iref{expr.const.const}, and
 evaluates to \tcode{true}.
 The \grammarterm{statement} of a trivial infinite loop is replaced with
 a call to the function \tcode{std::this_thread::yield}\iref{thread.thread.this};
@@ -822,7 +826,7 @@ An expression is \defn{expansion-iterable} if it does not have array type and ei
 \tcode{E.begin()} and \tcode{E.end()}, or
 \item
 argument-dependent lookups for \tcode{begin(E)} and for \tcode{end(E)}
-each find at least one function or function template.
+each find at least one viable candidate\iref{over.match.viable}.
 \end{itemize}
 
 \pnum
@@ -869,10 +873,8 @@ Otherwise, if $S$ is an iterating expansion statement, $S$ is equivalent to:
 \begin{codeblock}
 {
   @\grammarterm{init-statement}@
-  constexpr auto&& @\exposidnc{range}@ = @\grammarterm{expansion-initializer}@;
-  constexpr auto @\exposidnc{begin}@ = @\exposidnc{begin-expr}@;            // see \ref{stmt.ranged}
-  constexpr auto @\exposidnc{end}@ = @\exposidnc{end-expr}@;                // see \ref{stmt.ranged}
-
+  @\opt{constexpr}@ decltype(auto) @\exposidnc{range}@ = (@\grammarterm{expansion-initializer}@);
+  @\opt{constexpr}@ auto @\exposidnc{begin}@ = @\exposidnc{begin-expr}@;         // see \ref{stmt.ranged}
   @$S_{0}$@
   @\vdots@
   @$S_{N-1}$@
@@ -880,30 +882,34 @@ Otherwise, if $S$ is an iterating expansion statement, $S$ is equivalent to:
 \end{codeblock}
 where $N$ is the result of evaluating the expression
 \begin{codeblock}
-[] consteval {
+[&] consteval {
   std::ptrdiff_t result = 0;
-  for (auto i = @\exposid{begin}@; i != @\exposid{end}@; ++i) ++result;
+  auto b = @\exposid{begin-expr}@;
+  auto e = @\exposid{end-expr}@;
+  for (; b != e; ++b) ++result;
   return result;                                // distance from \exposid{begin} to \exposid{end}
 }()
 \end{codeblock}
 and $S_{i}$ is
 \begin{codeblock}
 {
-  constexpr auto @\exposid{iter}@ = @\exposid{begin}@ + decltype(begin - begin){@\placeholder{i}@};
+  @\opt{constexpr}@ auto @\exposid{iter}@ = @\exposid{begin}@ + decltype(begin - begin){@\placeholder{i}@};
   @\grammarterm{for-range-declaration}@ = *@\exposid{iter}@;
   @\grammarterm{compound-statement}@
 }
 \end{codeblock}
-The variables \exposid{range}, \exposid{begin}, \exposid{end}, and \exposid{iter}
+The variables \exposid{range}, \exposid{begin}, and \exposid{iter}
 are defined for exposition only.
+The keyword \keyword{constexpr} is present in the declarations
+of \exposid{range}, \exposid{begin}, and \exposid{iter}
+if and only if
+\keyword{constexpr} is one of the \grammarterm{decl-specifier}{s} of
+the \grammarterm{decl-specifier-seq} of
+the \grammarterm{for-range-declaration}.
 The identifier \tcode{\placeholder{i}} is considered to be
 a prvalue of type \tcode{std::ptrdiff_t};
 the program is ill-formed if
 \tcode{\placeholder{i}} is not representable as such a value.
-\begin{note}
-The instantiation is ill-formed if \exposid{range}
-is not a constant expression\iref{expr.const}.
-\end{note}
 
 \item
 Otherwise, $S$ is a destructuring expansion statement and,
@@ -928,11 +934,14 @@ where $N$ is the structured binding size of the type
 of the \grammarterm{expansion-initializer} and $S_{i}$ is
 \begin{codeblock}
 {
-  @\grammarterm{for-range-declaration}@ = @$u_{i}$@;
+  @\grammarterm{for-range-declaration}@ = @$v_{i}$@;
   @\grammarterm{compound-statement}@
 }
 \end{codeblock}
-The keyword \keyword{constexpr} is present in the declaration
+If the \grammarterm{expansion-initializer} is an lvalue, then
+$v_{i}$ is $u_{i}$;
+otherwise, $v_{i}$ is \tcode{static_cast<decltype($u_{i}$)\&\&>($u_{i}$)}.
+The keyword \keyword{constexpr} is present in the \grammarterm{structured-binding-declaration}
 of $u_{0}, u_{1}, \dotsc, u_{N-1}$ if and only if
 \keyword{constexpr} is one of the \grammarterm{decl-specifier}s
 of the \grammarterm{decl-specifier-seq}
@@ -1121,7 +1130,7 @@ a non-coroutine function with a \cv{}~\keyword{void} return type is
 equivalent to a \tcode{return} with no operand.
 Otherwise, flowing off the end of a function
 that is neither \tcode{main}\iref{basic.start.main} nor a coroutine\iref{dcl.fct.def.coroutine}
-results in undefined behavior.
+results in undefined behavior\ubdef{stmt.return.flow.off}.
 
 \pnum
 The copy-initialization of the result of the call is sequenced before the
@@ -1212,12 +1221,11 @@ shall be a prvalue of type \keyword{void}.
 \end{itemize}
 
 \pnum
-If a search for the name \tcode{return_void} in the scope of the promise type
-finds any declarations,
+If overload resolution for \placeholder{p}\tcode{.return_void()} succeeds,
 flowing off the end of a coroutine's \grammarterm{function-body}
 is equivalent to a \keyword{co_return} with no operand;
 otherwise flowing off the end of a coroutine's \grammarterm{function-body}
-results in undefined behavior.
+results in undefined behavior\ubdef{stmt.return.coroutine.flow.off}.
 
 \rSec2[stmt.goto]{The \keyword{goto} statement}%
 \indextext{statement!\idxcode{goto}}
@@ -1300,7 +1308,8 @@ is \defnx{active}{variable!active} everywhere in the scope to which it belongs
 after its \grammarterm{init-declarator}.
 \indextext{initialization!jump past}%
 \indextext{\idxcode{goto}!initialization and}%
-Upon each transfer of control (including sequential execution of statements)
+Upon each transfer of control (including sequential execution of statements,
+but excluding function calls)
 within a function from point $P$ to point $Q$,
 all block variables with automatic storage duration
 that are active at $P$ and not at $Q$ are destroyed in the reverse order of their construction.
@@ -1356,7 +1365,7 @@ due to its own synchronization operations.
 \end{note}
 If control
 re-enters the declaration recursively while
-the variable is being initialized, the behavior is undefined.
+the variable is being initialized, the behavior is undefined\ubdef{stmt.dcl.local.static.init.recursive}.
 \begin{example}
 \begin{codeblock}
 int foo(int i) {
@@ -1448,7 +1457,7 @@ If, during parsing, lookup finds
 that a name in a template argument is bound to
 (part of) the declaration being parsed,
 the program is ill-formed.
-No diagnostic is required.
+No diagnostic is required\ifndrdef{stmt.ambig.bound.diff.parse}.
 \begin{example}
 \begin{codeblock}
 struct T1 {

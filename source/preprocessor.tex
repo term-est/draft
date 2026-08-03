@@ -146,6 +146,7 @@
 \begin{bnf}
 \nontermdef{embed-standard-parameter}\br
     \terminal{limit} \terminal{(} pp-balanced-token-seq \terminal{)}\br
+    \terminal{offset} \terminal{(} pp-balanced-token-seq \terminal{)}\br
     \terminal{prefix} \terminal{(} \opt{pp-balanced-token-seq} \terminal{)}\br
     \terminal{suffix} \terminal{(} \opt{pp-balanced-token-seq} \terminal{)}\br
     \terminal{if_empty} \terminal{(} \opt{pp-balanced-token-seq} \terminal{)}
@@ -229,15 +230,6 @@ one of the two preceding forms.
 
 The last preprocessing token in the sequence is the first preprocessing token within the sequence that
 is immediately followed by whitespace containing a new-line character.
-\begin{footnote}
-Thus,
-preprocessing directives are commonly called ``lines''.
-These ``lines'' have no other syntactic significance,
-as all whitespace is equivalent except in certain situations
-during preprocessing (see the
-\tcode{\#}
-character string literal creation operator in~\ref{cpp.stringize}, for example).
-\end{footnote}
 \begin{note}
 A new-line character ends the preprocessing directive even if it occurs
 within what would otherwise be an invocation of a function-like macro.
@@ -509,12 +501,6 @@ The identifiers \xname{has_include}, \xname{has_embed}, and \xname{has_cpp_attri
 shall not appear in any context not mentioned in this subclause.
 
 \pnum
-Each preprocessing token that remains (in the list of preprocessing tokens that
-will become the controlling expression)
-after all macro replacements have occurred
-shall be in the lexical form of a token\iref{lex.token}.
-
-\pnum
 Preprocessing directives of the forms
 \begin{ncsimplebnf}
 \indextext{\idxcode{\#if}}%
@@ -542,12 +528,12 @@ and that \grammarterm{identifier} is defined
 as a macro\iref{cpp.replace.general}, the program is ill-formed.
 If the preprocessing token
 \tcode{defined}
-is generated as a result of this replacement process
+is generated as a result of this replacement process\ifndrdef{cpp.cond.defined.after.macro}
 or use of the
 \tcode{defined}
 unary operator does not match one of the two specified forms
 prior to macro replacement,
-the program is ill-formed, no diagnostic required.
+the program is ill-formed, no diagnostic required\ifndrdef{cpp.cond.defined.malformed}.
 
 \pnum
 After all replacements due to macro expansion and
@@ -574,7 +560,7 @@ Therefore it is not subject to this replacement.
 
 \pnum
 The resulting tokens comprise the controlling constant expression
-which is evaluated according to the rules of~\ref{expr.const}
+which is evaluated according to the rules of~\ref{expr.const.core}
 using arithmetic that has at least the ranges specified
 in~\ref{support.limits}. For the purposes of this token conversion and evaluation
 all signed and unsigned integer types
@@ -772,7 +758,8 @@ the treatment of whitespace
 is \impldef{treatment of whitespace when processing a \tcode{\#include} directive}.
 If the attempt succeeds, the directive with the so-formed \grammarterm{header-name}
 is processed as specified for the previous form.
-Otherwise, the program is ill-formed, no diagnostic required.
+Otherwise, the program is
+ill-formed, no diagnostic required\ifndrdef{cpp.include.malformed.headername}.
 \begin{note}
 Adjacent \grammarterm{string-literal}s are not concatenated into
 a single \grammarterm{string-literal}
@@ -929,16 +916,25 @@ If the implementation-resource-width is not an integral multiple of
 \libmacro{CHAR_BIT}, the program is ill-formed.
 Let \defn{implementation-resource-count} be
 implementation-resource-width divided by \libmacro{CHAR_BIT}.
+Every resource has a \defn{resource-offset}, which is
+
+\begin{itemize}
+\item
+  the value as computed from the optionally-provided \tcode{offset}
+  \grammarterm{embed-parameter}\iref{cpp.embed.param.offset}, if present;
+\item
+  otherwise, \tcode{0}.
+\end{itemize}
 Every resource also has a \defn{resource-count}, which is
 
 \begin{itemize}
 \item
-  the value as computed from the optionally-provided \tcode{limit}
-  \grammarterm{embed-parameter}\iref{cpp.embed.param.limit}, if present;
+  the value $\max(\min(\text{limit-value}, \text{implementation-resource-count} - \text{resource-offset}), 0)$
+  if the \tcode{limit} \grammarterm{embed-parameter}\iref{cpp.embed.param.limit} is present,
+  where the value computed from the \tcode{limit} \grammarterm{embed-parameter} is \defn{limit-value};
 \item
-  otherwise, the implementation-resource-count.
+  otherwise, the value $\max(\text{implementation-resource-count} - \text{resource-offset}, 0)$.
 \end{itemize}
-
 A resource is empty if the resource-count is zero.
 
 \pnum
@@ -955,11 +951,15 @@ literals of type \tcode{int}, unless otherwise modified by embed
 parameters\iref{cpp.embed.param}.
 
 \pnum
-The integer literals in the comma-separated list correspond to
-resource-count consecutive calls to \tcode{std::fgetc}\iref{cstdio.syn}
-from the resource, as a binary file.
-If any call to \tcode{std::fgetc} returns \tcode{EOF}, the program is
-ill-formed.
+First,
+resource-offset calls to \tcode{std::fgetc}
+from the resource as a binary file
+have their result discarded and ignored.
+Next,
+resource-count consecutive calls to \tcode{std::fgetc}
+produce the elements of the comma-separated list of integer literals, in order.
+If any of the resource-count calls to \tcode{std::fgetc} returns \tcode{EOF},
+the program is ill-formed.
 
 \pnum
 \recommended The value of each integer literal should closely represent
@@ -1116,11 +1116,6 @@ is equivalent to:
 \pnum
 The \grammarterm{constant-expression} shall be an integral constant expression
 whose value is greater than or equal to zero.
-The resource-count\iref{cpp.embed.gen} becomes
-implementation-resource-count, if the value of the
-\grammarterm{constant-expression} is greater than
-implementation-resource-count; otherwise, the value of the
-\grammarterm{constant-expression}.
 \begin{example}
 \begin{codeblock}
 constexpr unsigned char sound_signature[] = {
@@ -1132,7 +1127,51 @@ static_assert(sizeof(sound_signature) == 4);    // OK
 \end{codeblock}
 \end{example}
 
+\rSec3[cpp.embed.param.offset]{offset parameter}
+
+\pnum
+An \grammarterm{embed-parameter} of the form
+\tcode{offset (} \grammarterm{pp-balanced-token-seq} \tcode{)}
+denotes the number of elements to be skipped from the resource.
+It shall appear at most once in the \grammarterm{embed-parameter-seq}.
+
+\pnum
+The \grammarterm{pp-balanced-token-seq}
+is evaluated as a \grammarterm{constant-expression}
+using the rules as described in conditional inclusion\iref{cpp.cond},
+but without being processed as in normal text an additional time.
+
+\pnum
+The \grammarterm{constant-expression}
+shall be an integral constant expression
+whose value is greater than or equal to zero.
+
+\pnum
+\begin{example}
+\begin{codeblock}
+constexpr const unsigned char arr[] = {
+// a hypothetical resource capable of expanding to four or more elements
+#embed <sdk/jump.wav>
+};
+
+constexpr const unsigned char offset_arr[] = {
+// the same hypothetical resource capable of expanding to four or more elements
+#embed <sdk/jump.wav> offset(2)
+};
+
+constexpr const unsigned char offset_limit_arr[] = {
+// the same hypothetical resource capable of expanding to four or more elements
+#embed <sdk/jump.wav> offset(1) limit(1)
+};
+
+static_assert(arr[2] == offset_arr[0]);         // OK
+static_assert(arr[3] == offset_arr[1]);         // OK
+static_assert(arr[1] == offset_limit_arr[0]);   // OK
+\end{codeblock}
+\end{example}
+
 \rSec3[cpp.embed.param.prefix]{prefix parameter}
+
 \pnum
 An \grammarterm{embed-parameter} of the form
 \begin{ncsimplebnf}
@@ -1146,6 +1185,7 @@ Otherwise, the \grammarterm{pp-balanced-token-seq} is placed immediately
 before the comma-delimited list of integral literals.
 
 \rSec3[cpp.embed.param.suffix]{suffix parameter}
+
 \pnum
 An \grammarterm{embed-parameter} of the form
 \begin{ncsimplebnf}
@@ -1176,6 +1216,7 @@ static_assert(is_empty || is_not_empty);
 \end{example}
 
 \rSec3[cpp.embed.param.if.empty]{\tcode{if_empty} parameter}
+
 \pnum
 An embed-parameter of the form
 \begin{ncsimplebnf}
@@ -1219,12 +1260,25 @@ int infinity_zero () {
 \end{codeblock}
 \end{example}
 
+\begin{example}
+Given a resource \tcode{<single_byte>}
+that has an implementation-resource-count of \tcode{1},
+the following directives:
+\begin{codeblock}
+#embed <single_byte> offset(1) if_empty(42203)
+\end{codeblock}
+are replaced with:
+\begin{codeblock}
+42203
+\end{codeblock}
+\end{example}
+
 \rSec1[cpp.module]{Module directive}
 \indextext{preprocessing directive!module}%
 
 \begin{bnf}
 \nontermdef{pp-module}\br
-    \opt{\keyword{export}} \keyword{module} \opt{pp-tokens} \terminal{;} new-line
+    \opt{\keyword{export}} \keyword{module} \opt{pp-tokens} new-line
 \end{bnf}
 
 \pnum
@@ -1233,8 +1287,7 @@ shall be of the form:
 \begin{ncsimplebnf}
 pp-module-name \opt{pp-module-partition} \opt{pp-tokens}
 \end{ncsimplebnf}
-where the \grammarterm{pp-tokens} (if any) shall not begin with
-a \tcode{(} preprocessing token and
+where
 the grammar non-terminals are defined as:
 \begin{ncbnf}
 \nontermdef{pp-module-name}\br
@@ -1251,15 +1304,9 @@ the grammar non-terminals are defined as:
 \end{ncbnf}
 No \grammarterm{identifier} in
 the \grammarterm{pp-module-name} or \grammarterm{pp-module-partition}
-shall currently be defined as an object-like macro.
-
-\pnum
-Any preprocessing tokens after the \tcode{module} preprocessing token
-in the \tcode{module} directive are processed just as in normal text.
-\begin{note}
-Each identifier currently defined as a macro name
-is replaced by its replacement list of preprocessing tokens.
-\end{note}
+shall currently be defined as an object-like macro
+or followed by \tcode{(} as the next preprocessing token at
+the start of phase 4 of translation\iref{lex.phases}.
 
 \pnum
 The \tcode{module} and \tcode{export} (if it exists) preprocessing tokens
@@ -1269,6 +1316,69 @@ are replaced by the \grammarterm{module-keyword} and
 This makes the line no longer a directive
 so it is not removed at the end of phase 4.
 \end{note}
+After this replacement,
+the preprocessing tokens that constituted the directive are
+a \grammarterm{text-line} and are processed as normal text.
+\begin{note}
+No macro expansion is possible for
+the \grammarterm{pp-module-name} and \grammarterm{pp-module-partition}.
+\end{note}
+After such processing,
+there shall be a \tcode{;} or \tcode{[} preprocessing token following
+the \grammarterm{pp-module-name} and
+optional \grammarterm{pp-module-partition}.
+
+\pnum
+\begin{example}
+\begin{codeblocktu}{Importable header \tcode{"common.h"}}
+#define DOT_BAR .bar
+#define MOD_ATTR [[vendor::shiny_module]]
+\end{codeblocktu}
+
+\begin{codeblocktu}{Translation unit \tcode{\#1}}
+module;
+#include "common.h"
+
+export module foo DOT_BAR;      // error: expansion of \tcode{DOT_BAR;} does not begin with \tcode{;} or \tcode{[}
+\end{codeblocktu}
+
+\begin{codeblocktu}{Translation unit \tcode{\#2}}
+module;
+#include "common.h"
+
+export module M MOD_ATTR ;      // OK
+\end{codeblocktu}
+\end{example}
+
+\begin{example}
+\begin{codeblock}
+export module a
+.b;                             // error: preprocessing token after \grammarterm{pp-module-name} is not \tcode{;} or \tcode{[}
+\end{codeblock}
+\end{example}
+
+\begin{example}
+\begin{codeblock}
+export module M [[
+attr1,
+attr2 ]] ;                      // OK
+\end{codeblock}
+\end{example}
+
+\begin{example}
+\begin{codeblock}
+export module M
+[[ attr1,
+attr2 ]] ;                      // OK
+\end{codeblock}
+\end{example}
+
+\begin{example}
+\begin{codeblock}
+export module M; int
+n;                              // OK
+\end{codeblock}
+\end{example}
 
 \rSec1[cpp.import]{Header unit importation}
 \indextext{header unit!preprocessing}%
@@ -1530,7 +1640,7 @@ part of the replacement list for either form of macro.
 \indextext{unit!translation}%
 A translation unit shall not \tcode{\#define} or \tcode{\#undef}
 macro names lexically identical
-to keywords,
+to keywords\iref{lex.key},
 to the identifiers listed in \tref{lex.name.special}, or
 to the \grammarterm{attribute-token}{s} described in~\ref{dcl.attr},
 except that the macro names \tcode{likely} and \tcode{unlikely} may be
@@ -2097,9 +2207,8 @@ causes the implementation to behave as if
 the following sequence of source lines begins with a
 source line that has a line number as specified
 by the digit sequence (interpreted as a decimal integer).
-If the digit sequence specifies zero
-or a number greater than 2147483647,
-the program is ill-formed.
+Digit sequences representing a number
+outside of the range \crange{1}{2147483647} are conditionally supported.
 
 \pnum
 A preprocessing directive of the form
@@ -2230,7 +2339,9 @@ The presumed source file name can be changed by the \tcode{\#line} directive\ire
 \item
 \indextext{__line__@\mname{LINE}}%
 \mname{LINE}\\
-An integer literal representing the presumed line number of
+The integer literal \tcode{0} or a decimal integer literal\iref{lex.icon},
+with no digit separators and no \grammarterm{integer-suffix},
+representing the presumed line number of
 the current source line within the current source file.
 \begin{note}
 The presumed line number can be changed by the \tcode{\#line} directive\iref{cpp.line}.
@@ -2269,46 +2380,6 @@ Larger alignments will be passed to
 \end{note}
 
 \item
-\indextext{__stdcpp_float16_t__@\mname{STDCPP_FLOAT16_T}}%
-\mname{STDCPP_FLOAT16_T}\\
-Defined as the integer literal \tcode{1}
-if and only if the implementation supports
-the \IsoFloatUndated{} floating-point interchange format binary16
-as an extended floating-point type\iref{basic.extended.fp}.
-
-\item
-\indextext{__stdcpp_float32_t__@\mname{STDCPP_FLOAT32_T}}%
-\mname{STDCPP_FLOAT32_T}\\
-Defined as the integer literal \tcode{1}
-if and only if the implementation supports
-the \IsoFloatUndated{} floating-point interchange format binary32
-as an extended floating-point type.
-
-\item
-\indextext{__stdcpp_float64_t__@\mname{STDCPP_FLOAT64_T}}%
-\mname{STDCPP_FLOAT64_T}\\
-Defined as the integer literal \tcode{1}
-if and only if the implementation supports
-the \IsoFloatUndated{} floating-point interchange format binary64
-as an extended floating-point type.
-
-\item
-\indextext{__stdcpp_float128_t__@\mname{STDCPP_FLOAT128_T}}%
-\mname{STDCPP_FLOAT128_T}\\
-Defined as the integer literal \tcode{1}
-if and only if the implementation supports
-the \IsoFloatUndated{} floating-point interchange format binary128
-as an extended floating-point type.
-
-\item
-\indextext{__stdcpp_bfloat16_t__@\mname{STDCPP_BFLOAT16_T}}%
-\mname{STDCPP_BFLOAT16_T}\\
-Defined as the integer literal \tcode{1}
-if and only if the implementation supports an extended floating-point type
-with the properties of the \grammarterm{typedef-name} \tcode{std::bfloat16_t}
-as described in \ref{basic.extended.fp}.
-
-\item
 \indextext{__time__@\mname{TIME}}%
 \mname{TIME}\\
 The time of translation of the source file:
@@ -2341,22 +2412,22 @@ an \impldef{text of \mname{TIME} when time of translation is not available} vali
 \defnxname{cpp_binary_literals}                   & \tcode{201304L} \\ \rowsep
 \defnxname{cpp_capture_star_this}                 & \tcode{201603L} \\ \rowsep
 \defnxname{cpp_char8_t}                           & \tcode{202207L} \\ \rowsep
-\defnxname{cpp_concepts}                          & \tcode{202002L} \\ \rowsep
+\defnxname{cpp_concepts}                          & \tcode{202606L} \\ \rowsep
 \defnxname{cpp_conditional_explicit}              & \tcode{201806L} \\ \rowsep
-\defnxname{cpp_consteval}                         & \tcode{202211L} \\ \rowsep
+\defnxname{cpp_consteval}                         & \tcode{202606L} \\ \rowsep
 \defnxname{cpp_constexpr}                         & \tcode{202406L} \\ \rowsep
 \defnxname{cpp_constexpr_dynamic_alloc}           & \tcode{201907L} \\ \rowsep
 \defnxname{cpp_constexpr_exceptions}              & \tcode{202411L} \\ \rowsep
 \defnxname{cpp_constexpr_in_decltype}             & \tcode{201711L} \\ \rowsep
 \defnxname{cpp_constexpr_virtual_inheritance}     & \tcode{202506L} \\ \rowsep
 \defnxname{cpp_constinit}                         & \tcode{201907L} \\ \rowsep
-\defnxname{cpp_contracts}                         & \tcode{202502L} \\ \rowsep
+\defnxname{cpp_contracts}                         & \tcode{202606L} \\ \rowsep
 \defnxname{cpp_decltype}                          & \tcode{200707L} \\ \rowsep
 \defnxname{cpp_decltype_auto}                     & \tcode{201304L} \\ \rowsep
 \defnxname{cpp_deduction_guides}                  & \tcode{202207L} \\ \rowsep
 \defnxname{cpp_delegating_constructors}           & \tcode{200604L} \\ \rowsep
 \defnxname{cpp_deleted_function}                  & \tcode{202403L} \\ \rowsep
-\defnxname{cpp_designated_initializers}           & \tcode{201707L} \\ \rowsep
+\defnxname{cpp_designated_initializers}           & \tcode{202606L} \\ \rowsep
 \defnxname{cpp_enumerator_attributes}             & \tcode{201411L} \\ \rowsep
 \defnxname{cpp_expansion_statements}              & \tcode{202506L} \\ \rowsep
 \defnxname{cpp_explicit_this_parameter}           & \tcode{202110L} \\ \rowsep
@@ -2366,9 +2437,9 @@ an \impldef{text of \mname{TIME} when time of translation is not available} vali
 \defnxname{cpp_hex_float}                         & \tcode{201603L} \\ \rowsep
 \defnxname{cpp_if_consteval}                      & \tcode{202106L} \\ \rowsep
 \defnxname{cpp_if_constexpr}                      & \tcode{201606L} \\ \rowsep
-\defnxname{cpp_impl_coroutine}                    & \tcode{201902L} \\ \rowsep
+\defnxname{cpp_impl_coroutine}                    & \tcode{202606L} \\ \rowsep
 \defnxname{cpp_impl_destroying_delete}            & \tcode{201806L} \\ \rowsep
-\defnxname{cpp_impl_reflection}                   & \tcode{202506L} \\ \rowsep
+\defnxname{cpp_impl_reflection}                   & \tcode{202603L} \\ \rowsep
 \defnxname{cpp_impl_three_way_comparison}         & \tcode{201907L} \\ \rowsep
 \defnxname{cpp_implicit_move}                     & \tcode{202207L} \\ \rowsep
 \defnxname{cpp_inheriting_constructors}           & \tcode{201511L} \\ \rowsep
@@ -2378,15 +2449,15 @@ an \impldef{text of \mname{TIME} when time of translation is not available} vali
 \defnxname{cpp_lambdas}                           & \tcode{200907L} \\ \rowsep
 \defnxname{cpp_modules}                           & \tcode{201907L} \\ \rowsep
 \defnxname{cpp_multidimensional_subscript}        & \tcode{202211L} \\ \rowsep
-\defnxname{cpp_named_character_escapes}           & \tcode{202207L} \\ \rowsep
+\defnxname{cpp_named_character_escapes}           & \tcode{202606L} \\ \rowsep
 \defnxname{cpp_namespace_attributes}              & \tcode{201411L} \\ \rowsep
 \defnxname{cpp_noexcept_function_type}            & \tcode{201510L} \\ \rowsep
 \defnxname{cpp_nontype_template_args}             & \tcode{201911L} \\ \rowsep
 \defnxname{cpp_nontype_template_parameter_auto}   & \tcode{201606L} \\ \rowsep
 \defnxname{cpp_nsdmi}                             & \tcode{200809L} \\ \rowsep
-\defnxname{cpp_pack_indexing}                     & \tcode{202311L} \\ \rowsep
+\defnxname{cpp_pack_indexing}                     & \tcode{202606L} \\ \rowsep
 \defnxname{cpp_placeholder_variables}             & \tcode{202306L} \\ \rowsep
-\defnxname{cpp_pp_embed}                          & \tcode{202502L} \\ \rowsep
+\defnxname{cpp_pp_embed}                          & \tcode{202606L} \\ \rowsep
 \defnxname{cpp_range_based_for}                   & \tcode{202211L} \\ \rowsep
 \defnxname{cpp_raw_strings}                       & \tcode{200710L} \\ \rowsep
 \defnxname{cpp_ref_qualifiers}                    & \tcode{200710L} \\ \rowsep
@@ -2400,7 +2471,7 @@ an \impldef{text of \mname{TIME} when time of translation is not available} vali
 \defnxname{cpp_template_parameters}               & \tcode{202502L} \\ \rowsep
 \defnxname{cpp_template_template_args}            & \tcode{201611L} \\ \rowsep
 \defnxname{cpp_threadsafe_static_init}            & \tcode{200806L} \\ \rowsep
-\defnxname{cpp_trivial_union}                     & \tcode{202502L} \\ \rowsep
+\defnxname{cpp_trivial_union}                     & \tcode{202603L} \\ \rowsep
 \defnxname{cpp_unicode_characters}                & \tcode{200704L} \\ \rowsep
 \defnxname{cpp_unicode_literals}                  & \tcode{200710L} \\ \rowsep
 \defnxname{cpp_user_defined_literals}             & \tcode{200809L} \\ \rowsep
@@ -2415,6 +2486,46 @@ an \impldef{text of \mname{TIME} when time of translation is not available} vali
 The following macro names are conditionally defined by the implementation:
 
 \begin{description}
+\item
+\indextext{__stdcpp_float16_t__@\mname{STDCPP_FLOAT16_T}}%
+\mname{STDCPP_FLOAT16_T}\\
+Defined, and has the value integer literal \tcode{1},
+if and only if the implementation supports
+the \IsoFloatUndated{} floating-point interchange format binary16
+as an extended floating-point type\iref{basic.extended.fp}.
+
+\item
+\indextext{__stdcpp_float32_t__@\mname{STDCPP_FLOAT32_T}}%
+\mname{STDCPP_FLOAT32_T}\\
+Defined, and has the value integer literal \tcode{1},
+if and only if the implementation supports
+the \IsoFloatUndated{} floating-point interchange format binary32
+as an extended floating-point type.
+
+\item
+\indextext{__stdcpp_float64_t__@\mname{STDCPP_FLOAT64_T}}%
+\mname{STDCPP_FLOAT64_T}\\
+Defined, and has the value integer literal \tcode{1},
+if and only if the implementation supports
+the \IsoFloatUndated{} floating-point interchange format binary64
+as an extended floating-point type.
+
+\item
+\indextext{__stdcpp_float128_t__@\mname{STDCPP_FLOAT128_T}}%
+\mname{STDCPP_FLOAT128_T}\\
+Defined, and has the value integer literal \tcode{1},
+if and only if the implementation supports
+the \IsoFloatUndated{} floating-point interchange format binary128
+as an extended floating-point type.
+
+\item
+\indextext{__stdcpp_bfloat16_t__@\mname{STDCPP_BFLOAT16_T}}%
+\mname{STDCPP_BFLOAT16_T}\\
+Defined, and has the value integer literal \tcode{1},
+if and only if the implementation supports an extended floating-point type
+with the properties of the \grammarterm{typedef-name} \tcode{std::bfloat16_t}
+as described in \ref{basic.extended.fp}.
+
 \item
 \indextext{__stdc__@\mname{STDC}}%
 \mname{STDC}\\

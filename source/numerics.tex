@@ -51,7 +51,7 @@ In other words, value types.
 These include arithmetic types,
 pointers, the library class
 \tcode{complex},
-and instantiations of
+and specializations of
 \tcode{valarray}
 for value types.
 \end{footnote}
@@ -1446,12 +1446,12 @@ namespace std {
       requires @\libconcept{output_range}@<R, invoke_result_t<D&, G&>> && @\libconcept{invocable}@<D&, G&> &&
                @\libconcept{uniform_random_bit_generator}@<remove_cvref_t<G>> &&
                is_arithmetic_v<invoke_result_t<D&, G&>>
-    constexpr borrowed_iterator_t<R> generate_random(R&& r, G&& g, D&& d);
+      constexpr borrowed_iterator_t<R> generate_random(R&& r, G&& g, D&& d);
 
     template<class G, class D, @\libconcept{output_iterator}@<invoke_result_t<D&, G&>> O, @\libconcept{sentinel_for}@<O> S>
       requires @\libconcept{invocable}@<D&, G&> && @\libconcept{uniform_random_bit_generator}@<remove_cvref_t<G>> &&
                is_arithmetic_v<invoke_result_t<D&, G&>>
-    constexpr O generate_random(O first, S last, G&& g, D&& d);
+      constexpr O generate_random(O first, S last, G&& g, D&& d);
   }
 
   // \ref{rand.dist.uni.int}, class template \tcode{uniform_int_distribution}
@@ -1558,62 +1558,60 @@ namespace std {
 
 \pnum
 Throughout \ref{rand},
-the effect of instantiating a template:
+where the template parameters are not constrained,
+the names of template parameters are used to express type requirements
+on an instantiated template $T$:
 \begin{itemize}
   \item
-    that has a template type parameter
+    If \tcode{T} has a template type parameter named
+    \tcode{Sseq}, \tcode{URBG}, \tcode{Engine},
+    \tcode{RealType}, \tcode{IntType}, or \tcode{UIntType},
+    the program is ill-formed if the corresponding template argument is cv-qualified.
+  \item
+    A template argument corresponding to a template parameter
     named \tcode{Sseq}
-    is undefined unless the corresponding template argument
-    is cv-unqualified and
-    meets the requirements
+    shall meet the requirements
     of seed sequence\iref{rand.req.seedseq}.
   \item
-    that has a template type parameter
+    A template argument corresponding to a template parameter
     named \tcode{URBG}
-    is undefined unless the corresponding template argument
-    is cv-unqualified and
-    meets the requirements
+    shall meet the requirements
     of uniform random bit generator\iref{rand.req.urng}.
   \item
-    that has a template type parameter
+    A template argument corresponding to a template parameter
     named \tcode{Engine}
-    is undefined unless the corresponding template argument
-    is cv-unqualified and
-    meets the requirements
+    shall meet the requirements
     of random number engine\iref{rand.req.eng}.
   \item
-    that has a template type parameter
+    If a template argument corresponding to a template parameter
     named \tcode{RealType}
-    is undefined unless the corresponding template argument
-    is cv-unqualified and
-    is one of
-    \tcode{float}, \tcode{double}, or \tcode{long double}.
+    is neither
+    a standard floating-point type\iref{basic.fundamental} nor
+    a member of an
+    \impldef{subset of extended floating-point types that can be used as \tcode{RealType}
+    template arguments} subset of extended floating-point types,
+    the program is ill-formed.
   \item
-    that has a template type parameter
+    If a template argument corresponding to a template parameter
     named \tcode{IntType}
-    is undefined unless the corresponding template argument
-    is cv-unqualified and
-    is one of
-      \tcode{short},
-      \tcode{int},
-      \tcode{long},
-      \tcode{long long},
-      \tcode{unsigned short},
-      \tcode{unsigned int},
-      \tcode{unsigned long},
-      or
-      \tcode{unsigned long long}.
+    is neither
+    a standard signed nor a standard unsigned integer type\iref{basic.fundamental}, nor
+    an extended integer type whose width is
+    greater or equal to that of \tcode{char} and
+    less than or equal to that of \tcode{long long}, nor
+    a member of an
+    \impldef{subset of integer types that can be used as \tcode{IntType} template arguments}
+    subset of integer types, the program is ill-formed.
   \item
-    that has a template type parameter
+    If a template argument corresponding to a template parameter
     named \tcode{UIntType}
-    is undefined unless the corresponding template argument
-    is cv-unqualified and
-    is one of
-      \tcode{unsigned short},
-      \tcode{unsigned int},
-      \tcode{unsigned long},
-      or
-      \tcode{unsigned long long}.
+    is neither
+    a standard or extended unsigned integer type whose width is
+    greater or equal to that of \tcode{short} and
+    less than or equal to that of \tcode{long long}, nor
+    a member of an
+    \impldef{subset of unsigned integer types that can be used as \tcode{UIntType} template arguments}
+    subset of unsigned integer types, the program is ill-formed.
 \end{itemize}
 
 \pnum
@@ -3280,7 +3278,7 @@ namespace std {
     static constexpr size_t word_count = n;
     static constexpr size_t round_count = r;
     static constexpr array<result_type, @\exposid{array-size}@> multipliers;
-    static constexpr array<result_type, @\exposid{array-size>}@ round_consts;
+    static constexpr array<result_type, @\exposid{array-size}@> round_consts;
     static constexpr result_type min() { return 0; }
     static constexpr result_type max() { return m - 1; }
     static constexpr result_type default_seed = 20111115u;
@@ -4452,7 +4450,7 @@ Exactly $k$ invocations of \tcode{g} per attempt.
 \pnum
 \begin{note}
 If the values $g_i$ produced by \tcode{g} are uniformly distributed,
-the instantiation's results are distributed as uniformly as possible.
+\tcode{generate_canonical}'s results are distributed as uniformly as possible.
 Obtaining a value in this way
 can be a useful step
 in the process of transforming
@@ -7932,6 +7930,52 @@ does not
 invalidate references or pointers to the elements of the array.
 \end{itemdescr}
 
+\rSec3[valarray.range]{Range access}
+
+\pnum
+The \tcode{iterator} type
+is a type that meets the requirements of a mutable
+\oldconcept{RandomAccessIterator}\iref{random.access.iterators}
+and models \libconcept{contiguous_iterator}\iref{iterator.concept.contiguous}.
+Its \tcode{value_type} is the template
+parameter \tcode{T} and its \tcode{reference} type is \tcode{T\&}.
+The \tcode{const_iterator} type meets the requirements of a constant
+\oldconcept{RandomAccessIterator}
+and models \libconcept{contiguous_iterator}.
+Its \tcode{value_type} is the template
+parameter \tcode{T} and its \tcode{reference} type is \tcode{const T\&}.
+
+\pnum
+The iterators returned by \tcode{begin} and \tcode{end} for an array
+are guaranteed to be valid until the member function
+\tcode{resize(size_t, T)}\iref{valarray.members} is called for that
+array or until the lifetime of that array ends, whichever happens
+first.
+
+\indexlibrarymember{begin}{valarray}%
+\begin{itemdecl}
+iterator begin();
+const_iterator begin() const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+An iterator referencing the first value in the array.
+\end{itemdescr}
+
+\indexlibrarymember{end}{valarray}%
+\begin{itemdecl}
+iterator end();
+const_iterator end() const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+An iterator referencing one past the last value in the array.
+\end{itemdescr}
+
 \rSec3[valarray.members]{Member functions}
 
 \indexlibrarymember{swap}{valarray}%
@@ -8508,7 +8552,7 @@ namespace std {
     const slice_array& operator=(const slice_array&) const;
     void operator=(const T&) const;
 
-    slice_array() = delete;     // as implied by declaring copy constructor above
+    slice_array() = delete;
   };
 }
 \end{codeblock}
@@ -8790,7 +8834,7 @@ namespace std {
     const gslice_array& operator=(const gslice_array&) const;
     void operator=(const T&) const;
 
-    gslice_array() = delete;    // as implied by declaring copy constructor above
+    gslice_array() = delete;
   };
 }
 \end{codeblock}
@@ -8918,7 +8962,7 @@ namespace std {
     const mask_array& operator=(const mask_array&) const;
     void operator=(const T&) const;
 
-    mask_array() = delete;      // as implied by declaring copy constructor above
+    mask_array() = delete;
   };
 }
 \end{codeblock}
@@ -9035,7 +9079,7 @@ namespace std {
     const indirect_array& operator=(const indirect_array&) const;
     void operator=(const T&) const;
 
-    indirect_array() = delete;  // as implied by declaring copy constructor above
+    indirect_array() = delete;
   };
 }
 \end{codeblock}
@@ -9157,253 +9201,11 @@ object to which the
 object refers.
 \end{itemdescr}
 
-\rSec2[valarray.range]{Range access}
-
-\pnum
-The \tcode{iterator} type
-is a type that meets the requirements of a mutable
-\oldconcept{RandomAccessIterator}\iref{random.access.iterators}
-and models \libconcept{contiguous_iterator}\iref{iterator.concept.contiguous}.
-Its \tcode{value_type} is the template
-parameter \tcode{T} and its \tcode{reference} type is \tcode{T\&}.
-The \tcode{const_iterator} type meets the requirements of a constant
-\oldconcept{RandomAccessIterator}
-and models \libconcept{contiguous_iterator}.
-Its \tcode{value_type} is the template
-parameter \tcode{T} and its \tcode{reference} type is \tcode{const T\&}.
-
-\pnum
-The iterators returned by \tcode{begin} and \tcode{end} for an array
-are guaranteed to be valid until the member function
-\tcode{resize(size_t, T)}\iref{valarray.members} is called for that
-array or until the lifetime of that array ends, whichever happens
-first.
-
-\indexlibrarymember{begin}{valarray}%
-\begin{itemdecl}
-iterator begin();
-const_iterator begin() const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns
-An iterator referencing the first value in the array.
-\end{itemdescr}
-
-\indexlibrarymember{end}{valarray}%
-\begin{itemdecl}
-iterator end();
-const_iterator end() const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns
-An iterator referencing one past the last value in the array.
-\end{itemdescr}
-
 \rSec1[c.math]{Mathematical functions for floating-point types}
 
 \rSec2[cmath.syn]{Header \tcode{<cmath>} synopsis}
 
 \indexheader{cmath}%
-\indexlibraryglobal{abs}%
-\indexlibraryglobal{acos}%
-\indexlibraryglobal{acosf}%
-\indexlibraryglobal{acosh}%
-\indexlibraryglobal{acoshf}%
-\indexlibraryglobal{acoshl}%
-\indexlibraryglobal{acosl}%
-\indexlibraryglobal{asin}%
-\indexlibraryglobal{asinf}%
-\indexlibraryglobal{asinh}%
-\indexlibraryglobal{asinhf}%
-\indexlibraryglobal{asinhl}%
-\indexlibraryglobal{asinl}%
-\indexlibraryglobal{atan}%
-\indexlibraryglobal{atan2}%
-\indexlibraryglobal{atan2f}%
-\indexlibraryglobal{atan2l}%
-\indexlibraryglobal{atanf}%
-\indexlibraryglobal{atanh}%
-\indexlibraryglobal{atanhf}%
-\indexlibraryglobal{atanhl}%
-\indexlibraryglobal{atanl}%
-\indexlibraryglobal{cbrt}%
-\indexlibraryglobal{cbrtf}%
-\indexlibraryglobal{cbrtl}%
-\indexlibraryglobal{ceil}%
-\indexlibraryglobal{ceilf}%
-\indexlibraryglobal{ceill}%
-\indexlibraryglobal{copysign}%
-\indexlibraryglobal{copysignf}%
-\indexlibraryglobal{copysignl}%
-\indexlibraryglobal{cos}%
-\indexlibraryglobal{cosf}%
-\indexlibraryglobal{cosh}%
-\indexlibraryglobal{coshf}%
-\indexlibraryglobal{coshl}%
-\indexlibraryglobal{cosl}%
-\indexlibraryglobal{double_t}%
-\indexlibraryglobal{erf}%
-\indexlibraryglobal{erfc}%
-\indexlibraryglobal{erfcf}%
-\indexlibraryglobal{erfcl}%
-\indexlibraryglobal{erff}%
-\indexlibraryglobal{erfl}%
-\indexlibraryglobal{exp}%
-\indexlibraryglobal{exp2}%
-\indexlibraryglobal{exp2f}%
-\indexlibraryglobal{exp2l}%
-\indexlibraryglobal{expf}%
-\indexlibraryglobal{expl}%
-\indexlibraryglobal{expm1}%
-\indexlibraryglobal{expm1f}%
-\indexlibraryglobal{expm1l}%
-\indexlibraryglobal{fabs}%
-\indexlibraryglobal{fabsf}%
-\indexlibraryglobal{fabsl}%
-\indexlibraryglobal{fdim}%
-\indexlibraryglobal{fdimf}%
-\indexlibraryglobal{fdiml}%
-\indexlibraryglobal{float_t}%
-\indexlibraryglobal{floor}%
-\indexlibraryglobal{floorf}%
-\indexlibraryglobal{floorl}%
-\indexlibraryglobal{fma}%
-\indexlibraryglobal{fmaf}%
-\indexlibraryglobal{fmal}%
-\indexlibraryglobal{fmax}%
-\indexlibraryglobal{fmaxf}%
-\indexlibraryglobal{fmaxl}%
-\indexlibraryglobal{fmaximum}%
-\indexlibraryglobal{fmaximum_num}%
-\indexlibraryglobal{fmin}%
-\indexlibraryglobal{fminf}%
-\indexlibraryglobal{fminl}%
-\indexlibraryglobal{fminimum}%
-\indexlibraryglobal{fminimum_num}%
-\indexlibraryglobal{fmod}%
-\indexlibraryglobal{fmodf}%
-\indexlibraryglobal{fmodl}%
-\indexlibraryglobal{fpclassify}%
-\indexlibraryglobal{frexp}%
-\indexlibraryglobal{frexpf}%
-\indexlibraryglobal{frexpl}%
-\indexlibraryglobal{hypot}%
-\indexlibraryglobal{hypotf}%
-\indexlibraryglobal{hypotl}%
-\indexlibraryglobal{ilogb}%
-\indexlibraryglobal{ilogbf}%
-\indexlibraryglobal{ilogbl}%
-\indexlibraryglobal{isfinite}%
-\indexlibraryglobal{isgreater}%
-\indexlibraryglobal{isgreaterequal}%
-\indexlibraryglobal{isinf}%
-\indexlibraryglobal{isless}%
-\indexlibraryglobal{islessequal}%
-\indexlibraryglobal{islessgreater}%
-\indexlibraryglobal{isnan}%
-\indexlibraryglobal{isnormal}%
-\indexlibraryglobal{isunordered}%
-\indexlibraryglobal{ldexp}%
-\indexlibraryglobal{ldexpf}%
-\indexlibraryglobal{ldexpl}%
-\indexlibraryglobal{lgamma}%
-\indexlibraryglobal{lgammaf}%
-\indexlibraryglobal{lgammal}%
-\indexlibraryglobal{llrint}%
-\indexlibraryglobal{llrintf}%
-\indexlibraryglobal{llrintl}%
-\indexlibraryglobal{llround}%
-\indexlibraryglobal{llroundf}%
-\indexlibraryglobal{llroundl}%
-\indexlibraryglobal{log}%
-\indexlibraryglobal{log10}%
-\indexlibraryglobal{log10f}%
-\indexlibraryglobal{log10l}%
-\indexlibraryglobal{log1p}%
-\indexlibraryglobal{log1pf}%
-\indexlibraryglobal{log1pl}%
-\indexlibraryglobal{log2}%
-\indexlibraryglobal{log2f}%
-\indexlibraryglobal{log2l}%
-\indexlibraryglobal{logb}%
-\indexlibraryglobal{logbf}%
-\indexlibraryglobal{logbl}%
-\indexlibraryglobal{logf}%
-\indexlibraryglobal{logl}%
-\indexlibraryglobal{lrint}%
-\indexlibraryglobal{lrintf}%
-\indexlibraryglobal{lrintl}%
-\indexlibraryglobal{lround}%
-\indexlibraryglobal{lroundf}%
-\indexlibraryglobal{lroundl}%
-\indexlibraryglobal{modf}%
-\indexlibraryglobal{modff}%
-\indexlibraryglobal{modfl}%
-\indexlibraryglobal{nan}%
-\indexlibraryglobal{nanf}%
-\indexlibraryglobal{nanl}%
-\indexlibraryglobal{nearbyint}%
-\indexlibraryglobal{nearbyintf}%
-\indexlibraryglobal{nearbyintl}%
-\indexlibraryglobal{nextafter}%
-\indexlibraryglobal{nextafterf}%
-\indexlibraryglobal{nextafterl}%
-\indexlibraryglobal{nexttoward}%
-\indexlibraryglobal{nexttowardf}%
-\indexlibraryglobal{nexttowardl}%
-\indexlibraryglobal{nextup}%
-\indexlibraryglobal{nextupf}%
-\indexlibraryglobal{nextupl}%
-\indexlibraryglobal{nextdown}%
-\indexlibraryglobal{nextdownf}%
-\indexlibraryglobal{nextdownl}%
-\indexlibraryglobal{pow}%
-\indexlibraryglobal{powf}%
-\indexlibraryglobal{powl}%
-\indexlibraryglobal{remainder}%
-\indexlibraryglobal{remainderf}%
-\indexlibraryglobal{remainderl}%
-\indexlibraryglobal{remquo}%
-\indexlibraryglobal{remquof}%
-\indexlibraryglobal{remquol}%
-\indexlibraryglobal{rint}%
-\indexlibraryglobal{rintf}%
-\indexlibraryglobal{rintl}%
-\indexlibraryglobal{round}%
-\indexlibraryglobal{roundf}%
-\indexlibraryglobal{roundl}%
-\indexlibraryglobal{scalbln}%
-\indexlibraryglobal{scalblnf}%
-\indexlibraryglobal{scalblnl}%
-\indexlibraryglobal{scalbn}%
-\indexlibraryglobal{scalbnf}%
-\indexlibraryglobal{scalbnl}%
-\indexlibraryglobal{signbit}%
-\indexlibraryglobal{sin}%
-\indexlibraryglobal{sinf}%
-\indexlibraryglobal{sinh}%
-\indexlibraryglobal{sinhf}%
-\indexlibraryglobal{sinhl}%
-\indexlibraryglobal{sinl}%
-\indexlibraryglobal{sqrt}%
-\indexlibraryglobal{sqrtf}%
-\indexlibraryglobal{sqrtl}%
-\indexlibraryglobal{tan}%
-\indexlibraryglobal{tanf}%
-\indexlibraryglobal{tanh}%
-\indexlibraryglobal{tanhf}%
-\indexlibraryglobal{tanhl}%
-\indexlibraryglobal{tanl}%
-\indexlibraryglobal{tgamma}%
-\indexlibraryglobal{tgammaf}%
-\indexlibraryglobal{tgammal}%
-\indexlibraryglobal{trunc}%
-\indexlibraryglobal{truncf}%
-\indexlibraryglobal{truncl}%
 \begin{codeblock}
 #define @\libmacro{HUGE_VAL}@ @\seebelow@
 #define @\libmacro{HUGE_VALF}@ @\seebelow@
@@ -9426,120 +9228,120 @@ An iterator referencing one past the last value in the array.
 #define @\libmacro{math_errhandling}@ @\seebelow@
 
 namespace std {
-  using float_t = @\seebelow@;
-  using double_t = @\seebelow@;
+  using @\libglobal{float_t}@ = @\seebelow@;
+  using @\libglobal{double_t}@ = @\seebelow@;
 
-  constexpr @\placeholdernc{floating-point-type}@ acos(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               acosf(float x);
-  constexpr long double         acosl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{acos}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{acosf}@(float x);
+  constexpr long double         @\libglobal{acosl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ asin(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               asinf(float x);
-  constexpr long double         asinl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{asin}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{asinf}@(float x);
+  constexpr long double         @\libglobal{asinl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ atan(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               atanf(float x);
-  constexpr long double         atanl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{atan}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{atanf}@(float x);
+  constexpr long double         @\libglobal{atanl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ atan2(@\placeholdernc{floating-point-type}@ y, @\placeholdernc{floating-point-type}@ x);
-  constexpr float               atan2f(float y, float x);
-  constexpr long double         atan2l(long double y, long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{atan2}@(@\placeholdernc{floating-point-type}@ y, @\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{atan2f}@(float y, float x);
+  constexpr long double         @\libglobal{atan2l}@(long double y, long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ cos(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               cosf(float x);
-  constexpr long double         cosl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{cos}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{cosf}@(float x);
+  constexpr long double         @\libglobal{cosl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ sin(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               sinf(float x);
-  constexpr long double         sinl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{sin}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{sinf}@(float x);
+  constexpr long double         @\libglobal{sinl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ tan(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               tanf(float x);
-  constexpr long double         tanl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{tan}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{tanf}@(float x);
+  constexpr long double         @\libglobal{tanl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ acosh(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               acoshf(float x);
-  constexpr long double         acoshl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{acosh}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{acoshf}@(float x);
+  constexpr long double         @\libglobal{acoshl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ asinh(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               asinhf(float x);
-  constexpr long double         asinhl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{asinh}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{asinhf}@(float x);
+  constexpr long double         @\libglobal{asinhl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ atanh(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               atanhf(float x);
-  constexpr long double         atanhl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{atanh}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{atanhf}@(float x);
+  constexpr long double         @\libglobal{atanhl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ cosh(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               coshf(float x);
-  constexpr long double         coshl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{cosh}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{coshf}@(float x);
+  constexpr long double         @\libglobal{coshl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ sinh(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               sinhf(float x);
-  constexpr long double         sinhl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{sinh}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{sinhf}@(float x);
+  constexpr long double         @\libglobal{sinhl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ tanh(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               tanhf(float x);
-  constexpr long double         tanhl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{tanh}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{tanhf}@(float x);
+  constexpr long double         @\libglobal{tanhl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ exp(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               expf(float x);
-  constexpr long double         expl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{exp}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{expf}@(float x);
+  constexpr long double         @\libglobal{expl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ exp2(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               exp2f(float x);
-  constexpr long double         exp2l(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{exp2}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{exp2f}@(float x);
+  constexpr long double         @\libglobal{exp2l}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ expm1(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               expm1f(float x);
-  constexpr long double         expm1l(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{expm1}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{expm1f}@(float x);
+  constexpr long double         @\libglobal{expm1l}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ frexp(@\placeholdernc{floating-point-type}@ value, int* exp);
-  constexpr float               frexpf(float value, int* exp);
-  constexpr long double         frexpl(long double value, int* exp);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{frexp}@(@\placeholdernc{floating-point-type}@ value, int* exp);
+  constexpr float               @\libglobal{frexpf}@(float value, int* exp);
+  constexpr long double         @\libglobal{frexpl}@(long double value, int* exp);
 
-  constexpr int ilogb(@\placeholdernc{floating-point-type}@ x);
-  constexpr int ilogbf(float x);
-  constexpr int ilogbl(long double x);
+  constexpr int @\libglobal{ilogb}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr int @\libglobal{ilogbf}@(float x);
+  constexpr int @\libglobal{ilogbl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ ldexp(@\placeholdernc{floating-point-type}@ x, int exp);
-  constexpr float               ldexpf(float x, int exp);
-  constexpr long double         ldexpl(long double x, int exp);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{ldexp}@(@\placeholdernc{floating-point-type}@ x, int exp);
+  constexpr float               @\libglobal{ldexpf}@(float x, int exp);
+  constexpr long double         @\libglobal{ldexpl}@(long double x, int exp);
 
-  constexpr @\placeholdernc{floating-point-type}@ log(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               logf(float x);
-  constexpr long double         logl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{log}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{logf}@(float x);
+  constexpr long double         @\libglobal{logl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ log10(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               log10f(float x);
-  constexpr long double         log10l(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{log10}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{log10f}@(float x);
+  constexpr long double         @\libglobal{log10l}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ log1p(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               log1pf(float x);
-  constexpr long double         log1pl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{log1p}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{log1pf}@(float x);
+  constexpr long double         @\libglobal{log1pl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ log2(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               log2f(float x);
-  constexpr long double         log2l(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{log2}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{log2f}@(float x);
+  constexpr long double         @\libglobal{log2l}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ logb(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               logbf(float x);
-  constexpr long double         logbl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{logb}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{logbf}@(float x);
+  constexpr long double         @\libglobal{logbl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ modf(@\placeholdernc{floating-point-type}@ value, @\placeholdernc{floating-point-type}@* iptr);
-  constexpr float               modff(float value, float* iptr);
-  constexpr long double         modfl(long double value, long double* iptr);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{modf}@(@\placeholdernc{floating-point-type}@ value, @\placeholdernc{floating-point-type}@* iptr);
+  constexpr float               @\libglobal{modff}@(float value, float* iptr);
+  constexpr long double         @\libglobal{modfl}@(long double value, long double* iptr);
 
-  constexpr @\placeholdernc{floating-point-type}@ scalbn(@\placeholdernc{floating-point-type}@ x, int n);
-  constexpr float               scalbnf(float x, int n);
-  constexpr long double         scalbnl(long double x, int n);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{scalbn}@(@\placeholdernc{floating-point-type}@ x, int n);
+  constexpr float               @\libglobal{scalbnf}@(float x, int n);
+  constexpr long double         @\libglobal{scalbnl}@(long double x, int n);
 
-  constexpr @\placeholdernc{floating-point-type}@ scalbln(@\placeholdernc{floating-point-type}@ x, long int n);
-  constexpr float               scalblnf(float x, long int n);
-  constexpr long double         scalblnl(long double x, long int n);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{scalbln}@(@\placeholdernc{floating-point-type}@ x, long int n);
+  constexpr float               @\libglobal{scalblnf}@(float x, long int n);
+  constexpr long double         @\libglobal{scalblnl}@(long double x, long int n);
 
-  constexpr @\placeholdernc{floating-point-type}@ cbrt(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               cbrtf(float x);
-  constexpr long double         cbrtl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{cbrt}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{cbrtf}@(float x);
+  constexpr long double         @\libglobal{cbrtl}@(long double x);
 
   // \ref{c.math.abs}, absolute values
   constexpr int                 abs(int j);                             // freestanding
@@ -9547,157 +9349,157 @@ namespace std {
   constexpr long long int       abs(long long int j);                   // freestanding
   constexpr @\placeholdernc{floating-point-type}@ abs(@\placeholdernc{floating-point-type}@ j);             // freestanding-deleted
 
-  constexpr @\placeholdernc{floating-point-type}@ fabs(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               fabsf(float x);
-  constexpr long double         fabsl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fabs}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{fabsf}@(float x);
+  constexpr long double         @\libglobal{fabsl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ hypot(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               hypotf(float x, float y);
-  constexpr long double         hypotl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{hypot}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{hypotf}@(float x, float y);
+  constexpr long double         @\libglobal{hypotl}@(long double x, long double y);
 
   // \ref{c.math.hypot3}, three-dimensional hypotenuse
   constexpr @\placeholdernc{floating-point-type}@ hypot(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y,
                                       @\placeholdernc{floating-point-type}@ z);
 
-  constexpr @\placeholdernc{floating-point-type}@ pow(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               powf(float x, float y);
-  constexpr long double         powl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{pow}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{powf}@(float x, float y);
+  constexpr long double         @\libglobal{powl}@(long double x, long double y);
 
-  constexpr @\placeholdernc{floating-point-type}@ sqrt(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               sqrtf(float x);
-  constexpr long double         sqrtl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{sqrt}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{sqrtf}@(float x);
+  constexpr long double         @\libglobal{sqrtl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ erf(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               erff(float x);
-  constexpr long double         erfl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{erf}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{erff}@(float x);
+  constexpr long double         @\libglobal{erfl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ erfc(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               erfcf(float x);
-  constexpr long double         erfcl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{erfc}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{erfcf}@(float x);
+  constexpr long double         @\libglobal{erfcl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ lgamma(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               lgammaf(float x);
-  constexpr long double         lgammal(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{lgamma}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{lgammaf}@(float x);
+  constexpr long double         @\libglobal{lgammal}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ tgamma(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               tgammaf(float x);
-  constexpr long double         tgammal(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{tgamma}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{tgammaf}@(float x);
+  constexpr long double         @\libglobal{tgammal}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ ceil(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               ceilf(float x);
-  constexpr long double         ceill(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{ceil}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{ceilf}@(float x);
+  constexpr long double         @\libglobal{ceill}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ floor(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               floorf(float x);
-  constexpr long double         floorl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{floor}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{floorf}@(float x);
+  constexpr long double         @\libglobal{floorl}@(long double x);
 
-  @\placeholdernc{floating-point-type}@ nearbyint(@\placeholdernc{floating-point-type}@ x);
-  float               nearbyintf(float x);
-  long double         nearbyintl(long double x);
+  @\placeholdernc{floating-point-type}@ @\libglobal{nearbyint}@(@\placeholdernc{floating-point-type}@ x);
+  float               @\libglobal{nearbyintf}@(float x);
+  long double         @\libglobal{nearbyintl}@(long double x);
 
-  @\placeholdernc{floating-point-type}@ rint(@\placeholdernc{floating-point-type}@ x);
-  float               rintf(float x);
-  long double         rintl(long double x);
+  @\placeholdernc{floating-point-type}@ @\libglobal{rint}@(@\placeholdernc{floating-point-type}@ x);
+  float               @\libglobal{rintf}@(float x);
+  long double         @\libglobal{rintl}@(long double x);
 
-  long int lrint(@\placeholdernc{floating-point-type}@ x);
-  long int lrintf(float x);
-  long int lrintl(long double x);
+  long int @\libglobal{lrint}@(@\placeholdernc{floating-point-type}@ x);
+  long int @\libglobal{lrintf}@(float x);
+  long int @\libglobal{lrintl}@(long double x);
 
-  long long int llrint(@\placeholdernc{floating-point-type}@ x);
-  long long int llrintf(float x);
-  long long int llrintl(long double x);
+  long long int @\libglobal{llrint}@(@\placeholdernc{floating-point-type}@ x);
+  long long int @\libglobal{llrintf}@(float x);
+  long long int @\libglobal{llrintl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ round(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               roundf(float x);
-  constexpr long double         roundl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{round}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{roundf}@(float x);
+  constexpr long double         @\libglobal{roundl}@(long double x);
 
-  constexpr long int lround(@\placeholdernc{floating-point-type}@ x);
-  constexpr long int lroundf(float x);
-  constexpr long int lroundl(long double x);
+  constexpr long int @\libglobal{lround}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr long int @\libglobal{lroundf}@(float x);
+  constexpr long int @\libglobal{lroundl}@(long double x);
 
-  constexpr long long int llround(@\placeholdernc{floating-point-type}@ x);
-  constexpr long long int llroundf(float x);
-  constexpr long long int llroundl(long double x);
+  constexpr long long int @\libglobal{llround}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr long long int @\libglobal{llroundf}@(float x);
+  constexpr long long int @\libglobal{llroundl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ trunc(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               truncf(float x);
-  constexpr long double         truncl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{trunc}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{truncf}@(float x);
+  constexpr long double         @\libglobal{truncl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ fmod(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               fmodf(float x, float y);
-  constexpr long double         fmodl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fmod}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{fmodf}@(float x, float y);
+  constexpr long double         @\libglobal{fmodl}@(long double x, long double y);
 
-  constexpr @\placeholdernc{floating-point-type}@ remainder(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               remainderf(float x, float y);
-  constexpr long double         remainderl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{remainder}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{remainderf}@(float x, float y);
+  constexpr long double         @\libglobal{remainderl}@(long double x, long double y);
 
-  constexpr @\placeholdernc{floating-point-type}@ remquo(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y, int* quo);
-  constexpr float               remquof(float x, float y, int* quo);
-  constexpr long double         remquol(long double x, long double y, int* quo);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{remquo}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y, int* quo);
+  constexpr float               @\libglobal{remquof}@(float x, float y, int* quo);
+  constexpr long double         @\libglobal{remquol}@(long double x, long double y, int* quo);
 
-  constexpr @\placeholdernc{floating-point-type}@ copysign(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               copysignf(float x, float y);
-  constexpr long double         copysignl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{copysign}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{copysignf}@(float x, float y);
+  constexpr long double         @\libglobal{copysignl}@(long double x, long double y);
 
-  double      nan(const char* tagp);
-  float       nanf(const char* tagp);
-  long double nanl(const char* tagp);
+  double      @\libglobal{nan}@(const char* tagp);
+  float       @\libglobal{nanf}@(const char* tagp);
+  long double @\libglobal{nanl}@(const char* tagp);
 
-  constexpr @\placeholdernc{floating-point-type}@ nextafter(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               nextafterf(float x, float y);
-  constexpr long double         nextafterl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{nextafter}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{nextafterf}@(float x, float y);
+  constexpr long double         @\libglobal{nextafterl}@(long double x, long double y);
 
-  constexpr @\placeholdernc{floating-point-type}@ nexttoward(@\placeholdernc{floating-point-type}@ x, long double y);
-  constexpr float               nexttowardf(float x, long double y);
-  constexpr long double         nexttowardl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{nexttoward}@(@\placeholdernc{floating-point-type}@ x, long double y);
+  constexpr float               @\libglobal{nexttowardf}@(float x, long double y);
+  constexpr long double         @\libglobal{nexttowardl}@(long double x, long double y);
 
-  constexpr @\placeholdernc{floating-point-type}@ nextup(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               nextupf(float x);
-  constexpr long double         nextupl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{nextup}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{nextupf}@(float x);
+  constexpr long double         @\libglobal{nextupl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ nextdown(@\placeholdernc{floating-point-type}@ x);
-  constexpr float               nextdownf(float x);
-  constexpr long double         nextdownl(long double x);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{nextdown}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr float               @\libglobal{nextdownf}@(float x);
+  constexpr long double         @\libglobal{nextdownl}@(long double x);
 
-  constexpr @\placeholdernc{floating-point-type}@ fdim(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               fdimf(float x, float y);
-  constexpr long double         fdiml(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fdim}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{fdimf}@(float x, float y);
+  constexpr long double         @\libglobal{fdiml}@(long double x, long double y);
 
-  constexpr @\placeholdernc{floating-point-type}@ fmax(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               fmaxf(float x, float y);
-  constexpr long double         fmaxl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fmax}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{fmaxf}@(float x, float y);
+  constexpr long double         @\libglobal{fmaxl}@(long double x, long double y);
 
-  constexpr @\placeholdernc{floating-point-type}@ fmin(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr float               fminf(float x, float y);
-  constexpr long double         fminl(long double x, long double y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fmin}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr float               @\libglobal{fminf}@(float x, float y);
+  constexpr long double         @\libglobal{fminl}@(long double x, long double y);
 
-  constexpr @\placeholdernc{floating-point-type}@ fmaximum(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr @\placeholdernc{floating-point-type}@ fmaximum_num(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr @\placeholdernc{floating-point-type}@ fminimum(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr @\placeholdernc{floating-point-type}@ fminimum_num(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fmaximum}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fmaximum_num}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fminimum}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fminimum_num}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
 
-  constexpr @\placeholdernc{floating-point-type}@ fma(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y,
+  constexpr @\placeholdernc{floating-point-type}@ @\libglobal{fma}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y,
                                     @\placeholdernc{floating-point-type}@ z);
-  constexpr float               fmaf(float x, float y, float z);
-  constexpr long double         fmal(long double x, long double y, long double z);
+  constexpr float               @\libglobal{fmaf}@(float x, float y, float z);
+  constexpr long double         @\libglobal{fmal}@(long double x, long double y, long double z);
 
   // \ref{c.math.lerp}, linear interpolation
   constexpr @\placeholdernc{floating-point-type}@ lerp(@\placeholdernc{floating-point-type}@ a, @\placeholdernc{floating-point-type}@ b,
                                      @\placeholdernc{floating-point-type}@ t) noexcept;
 
   // \ref{c.math.fpclass}, classification / comparison functions
-  constexpr int fpclassify(@\placeholdernc{floating-point-type}@ x);
-  constexpr bool isfinite(@\placeholdernc{floating-point-type}@ x);
-  constexpr bool isinf(@\placeholdernc{floating-point-type}@ x);
-  constexpr bool isnan(@\placeholdernc{floating-point-type}@ x);
-  constexpr bool isnormal(@\placeholdernc{floating-point-type}@ x);
-  constexpr bool signbit(@\placeholdernc{floating-point-type}@ x);
-  constexpr bool isgreater(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr bool isgreaterequal(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr bool isless(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr bool islessequal(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr bool islessgreater(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
-  constexpr bool isunordered(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr int  @\libglobal{fpclassify}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr bool @\libglobal{isfinite}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr bool @\libglobal{isinf}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr bool @\libglobal{isnan}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr bool @\libglobal{isnormal}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr bool @\libglobal{signbit}@(@\placeholdernc{floating-point-type}@ x);
+  constexpr bool @\libglobal{isgreater}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr bool @\libglobal{isgreaterequal}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr bool @\libglobal{isless}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr bool @\libglobal{islessequal}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr bool @\libglobal{islessgreater}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
+  constexpr bool @\libglobal{isunordered}@(@\placeholdernc{floating-point-type}@ x, @\placeholdernc{floating-point-type}@ y);
 
   // \ref{sf.cmath}, mathematical special functions
 
@@ -9908,7 +9710,7 @@ The absolute value of \tcode{x}.
 
 \indexlibrary{\idxcode{hypot}!3-argument form}%
 \begin{itemdecl}
-constexpr @\placeholder{floating-point-type}@ hypot(@\placeholder{floating-point-type}@ x, @\placeholder{floating-point-type}@ y,
+constexpr @\placeholdernc{floating-point-type}@ hypot(@\placeholder{floating-point-type}@ x, @\placeholder{floating-point-type}@ y,
                                     @\placeholder{floating-point-type}@ z);
 \end{itemdecl}
 
@@ -9922,7 +9724,7 @@ $\sqrt{x^2+y^2+z^2}$.
 
 \indexlibraryglobal{lerp}%
 \begin{itemdecl}
-constexpr @\placeholder{floating-point-type}@ lerp(@\placeholder{floating-point-type}@ a, @\placeholder{floating-point-type}@ b,
+constexpr @\placeholdernc{floating-point-type}@ lerp(@\placeholder{floating-point-type}@ a, @\placeholder{floating-point-type}@ b,
                                    @\placeholder{floating-point-type}@ t) noexcept;
 \end{itemdecl}
 \begin{itemdescr}
@@ -10964,7 +10766,7 @@ namespace std::linalg {
   struct explicit_diagonal_t;
   inline constexpr explicit_diagonal_t explicit_diagonal;
 
-  // \ref{linalg.layout.packed}, class template layout_blas_packed
+  // \ref{linalg.layout.packed}, class template \tcode{layout_blas_packed}
   template<class Triangle, class StorageOrder>
     class layout_blas_packed;
 
@@ -11145,9 +10947,9 @@ namespace std::linalg {
 
   // \ref{linalg.algs.blas1.iamax}, index of maximum absolute value of vector elements
   template<@\exposconcept{in-vector}@ InVec>
-    typename InVec::extents_type vector_idx_abs_max(InVec v);
+    typename InVec::size_type vector_idx_abs_max(InVec v);
   template<class ExecutionPolicy, @\exposconcept{in-vector}@ InVec>
-    typename InVec::extents_type vector_idx_abs_max(ExecutionPolicy&& exec, InVec v);
+    typename InVec::size_type vector_idx_abs_max(ExecutionPolicy&& exec, InVec v);
 
   // \ref{linalg.algs.blas1.matfrobnorm}, Frobenius norm of a matrix
   template<@\exposconcept{in-matrix}@ InMat, @\exposconcept{scalar}@ Scalar>
@@ -12632,7 +12434,7 @@ constexpr bool @\exposid{multipliable}@(                                     // 
   return out_vec.extent(0) == in_mat.extent(0) && in_mat.extent(1) == in_vec.extent(0);
 }
 
-constexpr bool @\exposid{multipliable}@( // \expos
+constexpr bool @\exposid{multipliable}@(                                     // \expos
   const @\exposconcept{in-vector}@ auto& in_vec, const @\exposconcept{in-matrix}@ auto& in_mat, const @\exposconcept{in-vector}@ auto& out_vec) {
   return out_vec.extent(0) == in_mat.extent(1) && in_mat.extent(0) == in_vec.extent(0);
 }
@@ -12682,10 +12484,11 @@ namespace std::linalg {
   class @\libglobal{scaled_accessor}@ {
   public:
     using @\libmember{element_type}{scaled_accessor}@ =
-      const decltype(declval<ScalingFactor>() * declval<NestedAccessor::element_type>());
+      const decltype(declval<ScalingFactor>() *
+                     declval<typename NestedAccessor::element_type>());
     using @\libmember{reference}{scaled_accessor}@ = remove_const_t<element_type>;
     using @\libmember{data_handle_type}{scaled_accessor}@ = NestedAccessor::data_handle_type;
-    using @\libmember{offset_policy}{scaled_accessor}@ = scaled_accessor<ScalingFactor, NestedAccessor::offset_policy>;
+    using @\libmember{offset_policy}{scaled_accessor}@ = scaled_accessor<ScalingFactor, typename NestedAccessor::offset_policy>;
 
     constexpr scaled_accessor() = default;
     template<class OtherNestedAccessor>
@@ -12771,7 +12574,7 @@ constexpr reference access(data_handle_type p, size_t i) const;
 \pnum
 \returns
 \begin{codeblock}
-scaling_factor() * NestedAccessor::element_type(@\exposid{nested-accessor}@.access(p, i))
+scaling_factor() * typename NestedAccessor::element_type(@\exposid{nested-accessor}@.access(p, i))
 \end{codeblock}
 \end{itemdescr}
 
@@ -12783,7 +12586,7 @@ constexpr offset_policy::data_handle_type offset(data_handle_type p, size_t i) c
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{\exposid{nested-accessor}.offset(p, i)}
+\tcode{\exposid{nested-accessor}.offset(p, i)}.
 \end{itemdescr}
 
 \rSec3[linalg.scaled.scaled]{Function template \tcode{scaled}}
@@ -12854,10 +12657,10 @@ namespace std::linalg {
   class @\libglobal{conjugated_accessor}@ {
   public:
     using @\libmember{element_type}{conjugated_accessor}@ =
-      const decltype(@\exposid{conj-if-needed}@(declval<NestedAccessor::element_type>()));
+      const decltype(@\exposid{conj-if-needed}@(declval<typename NestedAccessor::element_type>()));
     using @\libmember{reference}{conjugated_accessor}@ = remove_const_t<element_type>;
     using @\libmember{data_handle_type}{conjugated_accessor}@ = NestedAccessor::data_handle_type;
-    using @\libmember{offset_policy}{conjugated_accessor}@ = conjugated_accessor<NestedAccessor::offset_policy>;
+    using @\libmember{offset_policy}{conjugated_accessor}@ = conjugated_accessor<typename NestedAccessor::offset_policy>;
 
     constexpr conjugated_accessor() = default;
     constexpr conjugated_accessor(const NestedAccessor& acc);
@@ -12930,7 +12733,9 @@ constexpr reference access(data_handle_type p, size_t i) const;
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{\exposid{conj-if-needed}(NestedAccessor::element_type(\exposid{nested-accessor_}.access(p, i)))}
+\begin{codeblock}
+@\exposid{conj-if-needed}@(typename NestedAccessor::element_type(@\exposid{nested-accessor_}@.access(p, i)))
+\end{codeblock}
 \end{itemdescr}
 
 \indexlibrarymember{conjugated_accessor}{offset}%
@@ -12941,7 +12746,7 @@ constexpr typename offset_policy::data_handle_type offset(data_handle_type p, si
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{\exposid{nested-accessor_}.offset(p, i)}
+\tcode{\exposid{nested-accessor_}.offset(p, i)}.
 \end{itemdescr}
 
 \rSec3[linalg.conj.conjugated]{Function template \tcode{conjugated}}
@@ -13052,7 +12857,7 @@ template<class IndexType, size_t InputExtent0, size_t InputExtent1>
 \begin{itemdescr}
 \pnum
 \returns
-\tcode{extents<IndexType, InputExtent1, InputExtent0>(in.extent(1), in.extent(0))}
+\tcode{extents<IndexType, InputExtent1, InputExtent0>(in.extent(1), in.extent(0))}.
 \end{itemdescr}
 
 \begin{codeblock}
@@ -13173,7 +12978,7 @@ constexpr index_type stride(size_t r) const;
 
 \pnum
 \returns
-\tcode{\exposid{nested-mapping_}.stride(r == 0 ? 1 : 0)}
+\tcode{\exposid{nested-mapping_}.stride(r == 0 ? 1 : 0)}.
 \end{itemdescr}
 
 \indexlibrarymember{layout_transpose::mapping}{operator==}%
@@ -13834,12 +13639,21 @@ These functions correspond to the BLAS function \tcode{xNRM2}\supercite{blas1}.
 \tcode{InVec::value_type} and \tcode{Scalar} are either a floating-point type, or
 a specialization of \tcode{complex}.
 Let \tcode{a} be
-\tcode{\exposid{abs-if-needed}(declval<typename InVec::value_type>())}.
-Then, \tcode{decltype(\linebreak init + a * a} is convertible to \tcode{Scalar}.
+\tcode{\exposid{abs-if-needed}(declval<typename InVec::value_type>())} and
+let \tcode{init_abs} be \tcode{\exposid{abs-if-needed}(init)}.
+Then, \tcode{decltype(init_abs * init_abs + a * a)}
+is convertible to \tcode{Scalar}.
 
 \pnum
 \returns
-The square root of the sum of the square of \tcode{init} and the squares of the absolute values of the elements of \tcode{v}.
+The square root of the sum
+whose terms are the following:
+\begin{itemize}
+\item
+the square of the absolute value of \tcode{init}, and
+\item
+the squares of the absolute values of the elements of \tcode{v}.
+\end{itemize}
 \begin{note}
 For \tcode{init} equal to zero, this is the Euclidean norm
 (also called 2-norm) of the vector \tcode{v}.
@@ -13970,9 +13784,9 @@ return vector_abs_sum(std::forward<ExecutionPolicy>(exec), v, T{});
 \indexlibraryglobal{vector_idx_abs_max}%
 \begin{itemdecl}
 template<@\exposconcept{in-vector}@ InVec>
-  typename InVec::extents_type vector_idx_abs_max(InVec v);
+  typename InVec::size_type vector_idx_abs_max(InVec v);
 template<class ExecutionPolicy, @\exposconcept{in-vector}@ InVec>
-  typename InVec::extents_type vector_idx_abs_max(ExecutionPolicy&& exec, InVec v);
+  typename InVec::size_type vector_idx_abs_max(ExecutionPolicy&& exec, InVec v);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -14032,17 +13846,24 @@ template<class ExecutionPolicy, @\exposconcept{in-matrix}@ InMat, @\exposconcept
 
 \pnum
 \mandates
-\tcode{InVec::value_type} and \tcode{Scalar} are either a floating-point type, or
+\tcode{InMat::value_type} and \tcode{Scalar} are either a floating-point type, or
 a specialization of \tcode{complex}.
 Let \tcode{a} be
-\tcode{\exposid{abs-if-needed}(declval<typename InMat::value_type>())}.
-Then, \tcode{decltype(\linebreak init + a * a)}
+\tcode{\exposid{abs-if-needed}(declval<typename InMat::value_type>())} and
+let \tcode{init_abs} be \tcode{\exposid{abs-if-needed}(init)}.
+Then, \tcode{decltype(init_abs * init_abs + a * a)}
 is convertible to \tcode{Scalar}.
 
 \pnum
 \returns
-The square root of the sum of squares
-of \tcode{init} and the absolute values of the elements of \tcode{A}.
+The square root of the sum
+whose terms are the following:
+\begin{itemize}
+\item
+the square of the absolute value of \tcode{init}, and
+\item
+the squares of the absolute values of the elements of \tcode{A}.
+\end{itemize}
 \begin{note}
 For \tcode{init} equal to zero,
 this is the Frobenius norm of the matrix \tcode{A}.
@@ -14114,7 +13935,7 @@ is convertible to \tcode{Scalar}.
 \item
 \tcode{init} if \tcode{A.extent(1)} is zero;
 \item
-otherwise, the sum of \tcode{init} and the one norm of the matrix $A$.
+otherwise, the sum of \tcode{init} and the one norm of the matrix \tcode{A}.
 \end{itemize}
 \begin{note}
 The one norm of the matrix \tcode{A}
@@ -14977,7 +14798,7 @@ These functions correspond to the BLAS functions
 For the overloads without an \tcode{ExecutionPolicy} argument,
 equivalent to:
 \begin{codeblock}
-matrix_rank_1_update(x, conjugated(y), A);
+matrix_rank_1_update(x, conjugated(y), E, A);
 \end{codeblock}
 \item
 otherwise, equivalent to:
@@ -15133,11 +14954,14 @@ where the scalar $\alpha$ is \tcode{\exposid{real-if-needed}(alpha)}.
 
 \indexlibraryglobal{hermitian_matrix_rank_1_update}%
 \begin{itemdecl}
-template<@\exposconcept{scalar}@ Scalar, @\exposconcept{possibly-packed-out-matrix}@ OutMat, class Triangle>
-  void hermitian_matrix_rank_1_update(InVec x, OutMat A, Triangle t);
+template<@\exposconcept{scalar}@ Scalar, @\exposconcept{in-vector}@ InVec, @\exposconcept{in-matrix}@ InMat, @\exposconcept{possibly-packed-out-matrix}@ OutMat,
+         class Triangle>
+  void hermitian_matrix_rank_1_update(Scalar alpha, InVec x, InMat E, OutMat A, Triangle t);
 template<class ExecutionPolicy,
-         @\exposconcept{scalar}@ Scalar, @\exposconcept{possibly-packed-out-matrix}@ OutMat, class Triangle>
-  void hermitian_matrix_rank_1_update(ExecutionPolicy&& exec, InVec x, OutMat A, Triangle t);
+         @\exposconcept{scalar}@ Scalar, @\exposconcept{in-vector}@ InVec, @\exposconcept{in-matrix}@ InMat, @\exposconcept{possibly-packed-out-matrix}@ OutMat,
+         class Triangle>
+  void hermitian_matrix_rank_1_update(ExecutionPolicy&& exec,
+                                      Scalar alpha, InVec x, InMat E, OutMat A, Triangle t);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -15163,7 +14987,7 @@ where the scalar $\alpha$ is \tcode{\exposid{real-if-needed}(alpha)}.
 \pnum
 \begin{note}
 These functions correspond to the BLAS functions
-\tcode{xSYR2},\tcode{xSPR2}, \tcode{xHER2} and \tcode{xHPR2}\supercite{blas2}.
+\tcode{xSYR2}, \tcode{xSPR2}, \tcode{xHER2} and \tcode{xHPR2}\supercite{blas2}.
 \end{note}
 
 \pnum
@@ -15973,7 +15797,7 @@ is \tcode{true} for those overloads with an \tcode{E} parameter.
 \tcode{\exposid{multipliable}(A, transposed(B), C)}
 is \tcode{true},
 \item
-\tcode{multipliable(B, transposed(A), C)}
+\tcode{\exposid{multipliable}(B, transposed(A), C)}
 is \tcode{true}, and
 \begin{note}
 This and the previous imply that \tcode{C} is square.
@@ -16038,6 +15862,8 @@ void symmetric_matrix_rank_2k_update(ExecutionPolicy&& exec,
 \end{itemdecl}
 
 \begin{itemdescr}
+\pnum
+\effects
 Computes $C = E + A B^T + B A^T$.
 \end{itemdescr}
 
@@ -16532,6 +16358,11 @@ The conversion from an arithmetic type \tcode{U} to a vectorizable type
 \tcode{T} is \defn{value-preserving} if all possible values of \tcode{U} can be
 represented with type \tcode{T}.
 
+\pnum
+If a program declares an explicit or partial specialization of
+any of the templates specified in subclause \ref{simd},
+the program is ill-formed, no diagnostic required.
+
 \rSec2[simd.expos]{Exposition-only types, variables, and concepts}
 
 \begin{codeblock}
@@ -16540,14 +16371,9 @@ template<size_t Bytes> using @\exposidnc{integer-from} = \seebelownc@;          
 
 template<class T, class Abi>
   constexpr @\exposidnc{simd-size-type} \exposidnc{simd-size-v} = \seebelownc@;                  // \expos
+template<size_t Bytes, class Abi>
+  constexpr @\exposidnc{simd-size-type} \exposidnc{mask-size-v} = \seebelownc@;                  // \expos
 template<class T> constexpr size_t @\exposidnc{mask-element-size} = \seebelownc@;    // \expos
-
-template<class T>
-  concept @\defexposconceptnc{constexpr-wrapper-like}@ =                                   // \expos
-    @\libconcept{convertible_to}@<T, decltype(T::value)> &&
-    @\libconcept{equality_comparable_with}@<T, decltype(T::value)> &&
-    bool_constant<T() == T::value>::value &&
-    bool_constant<static_cast<decltype(T::value)>(T()) == T::value>::value;
 
 template<class From, class To>
   concept @\defexposconceptnc{explicitly-convertible-to}@ =                                // \expos
@@ -16556,8 +16382,6 @@ template<class From, class To>
     };
 
 template<class T> using @\exposidnc{deduced-vec-t} = \seebelownc@;                   // \expos
-
-template<class V, class T> using @\exposidnc{make-compatible-simd-t} = \seebelownc@; // \expos
 
 template<class V>
   concept @\defexposconceptnc{simd-vec-type}@ =                                            // \expos
@@ -16584,13 +16408,9 @@ template<class V>
   concept @\defexposconceptnc{simd-complex}@ =                                             // \expos
     @\exposconcept{simd-vec-type}@<V> && @\libconcept{same_as}@<typename V::value_type, complex<@\exposid{simd-complex-value-type}@<V>>>;
 
-template<class... Ts>
+template<class T>
   concept @\defexposconceptnc{math-floating-point}@ =                                      // \expos
-    (@\exposconceptnc{simd-floating-point}<\exposidnc{deduced-vec-t}@<Ts>> || ...);
-
-template<class... Ts>
-  requires @\exposconceptnc{math-floating-point}@<Ts...>
-    using @\exposidnc{math-common-simd-t} = \seebelownc@;                            // \expos
+    @\exposconceptnc{simd-floating-point}<\exposidnc{deduced-vec-t}@<T>>;
 
 template<class BinaryOperation, class T>
   concept @\exposconceptnc{reduction-binary-operation} = \seebelownc@;                    // \expos
@@ -16639,6 +16459,19 @@ otherwise.
 \end{itemdescr}
 
 \begin{itemdecl}
+template<size_t Bytes, class Abi>
+  constexpr @\exposid{simd-size-type} \exposid{mask-size-v}@ = @\seebelow@;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\tcode{\exposid{mask-size-v}<Bytes, Abi>} denotes
+the width of \tcode{basic_mask<Bytes, Abi>}
+if the specialization \tcode{ba\-sic_mask<Bytes, Abi>} is enabled, or
+\tcode{0} otherwise.
+\end{itemdescr}
+
+\begin{itemdecl}
 template<class T> constexpr size_t @\exposid{mask-element-size}@ = @\seebelow@;
 \end{itemdecl}
 
@@ -16657,74 +16490,7 @@ template<class T> using @\exposid{deduced-vec-t}@ = @\seebelow@;
 Let \tcode{x} denote an lvalue of type \tcode{const T}.
 
 \pnum
-\tcode{\exposid{deduced-vec-t}<T>} is an alias for
-\begin{itemize}
- \item
-   \tcode{decltype(x + x)}, if the type of \tcode{x + x} is an enabled
-   specialization of \tcode{basic_vec}; otherwise
- \item
-   \tcode{void}.
-\end{itemize}
-\end{itemdescr}
-
-\begin{itemdecl}
-template<class V, class T> using @\exposid{make-compatible-simd-t}@ = @\seebelow@;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-Let \tcode{x} denote an lvalue of type \tcode{const T}.
-
-\pnum
-\tcode{\exposid{make-compatible-simd-t}<V, T>} is an alias for
-\begin{itemize}
- \item
-   \tcode{\exposid{deduced-vec-t}<T>}, if that type is not \tcode{void},
-   otherwise
- \item
-   \tcode{vec<decltype(x + x), V::size()>}.
-\end{itemize}
-\end{itemdescr}
-
-\begin{itemdecl}
-template<class... Ts>
-  requires @\exposconcept{math-floating-point}@<Ts...>
-    using @\exposid{math-common-simd-t}@ = @\seebelow@;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-Let \tcode{T0} denote \tcode{Ts...[0]}.
-Let \tcode{T1} denote \tcode{Ts...[1]}.
-Let \tcode{TRest} denote a pack such that \tcode{T0, T1, TRest...} is equivalent
-to \tcode{Ts...}.
-
-\pnum
-Let \tcode{\exposid{math-common-simd-t}<Ts...>} be an alias for
-\begin{itemize}
- \item
-   \tcode{\exposid{deduced-vec-t}<T0>}, if \tcode{sizeof...(Ts)} equals $1$;
-   otherwise
- \item
-   \tcode{common_type_t<\exposid{deduced-vec-t}<T0>,
-   \exposid{deduced-vec-t}<T1>>}, if \tcode{sizeof...(Ts)} equals $2$ and
-   \tcode{\exposconcept{math-floating-point}<T0> \&\&
-   \exposconcept{math-floating-point}<T1>} is \tcode{true}; otherwise
- \item
-   \tcode{common_type_t<\exposid{deduced-vec-t}<T0>, T1>}, if
-   \tcode{sizeof...(Ts)} equals $2$ and
-   \tcode{\exposconceptx{math-floating-\brk{}point}{math-floating-point}<\brk{}T0>}
-   is \tcode{true}; otherwise
- \item
-   \tcode{common_type_t<T0, \exposid{deduced-vec-t}<T1>>}, if
-   \tcode{sizeof...(Ts)} equals $2$; otherwise
- \item
-   \tcode{common_type_t<\exposid{math-common-simd-t}<T0, T1>, TRest...>}, if
-   \tcode{\exposid{math-common-simd-t}<T0, T1>} is valid and denotes a type;
-   otherwise
- \item
-   \tcode{common_type_t<\exposid{math-common-simd-t}<TRest...>, T0, T1>}.
-\end{itemize}
+\tcode{\exposid{deduced-vec-t}<T>} is an alias for \tcode{decltype(x + x)}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -16779,26 +16545,26 @@ translation unit boundaries (e.g., function calls or I/O).
 An implementation defines ABI tag types as necessary for the following aliases.
 
 \pnum
-\tcode{\exposid{deduce-abi-t}<T, N>} is defined if
+\tcode{\exposid{deduce-abi-t}<T, N>} names an ABI tag type if and only if
 \begin{itemize}
 \item \tcode{T} is a vectorizable type,
 \item \tcode{N} is greater than zero, and
 \item \tcode{N} is not larger than an implementation-defined maximum.
 \end{itemize}
+Otherwise, \tcode{\exposid{deduce-abi-t}<T, N>} names an unspecified type.
 The \impldef{maximum width for \tcode{vec} and \tcode{mask}} maximum for
 \tcode{N} is not smaller than 64 and can differ depending on \tcode{T}.
 
 \pnum
-Where present, \tcode{\exposid{deduce-abi-t}<T, N>} names an ABI tag type such
-that
+If \tcode{\exposid{deduce-abi-t}<T, N>} names an ABI tag type,
+the following is \tcode{true}:
 \begin{itemize}
- \item
-   \tcode{\exposid{simd-size-v}<T, \exposid{deduce-abi-t}<T, N>>} equals
-   \tcode{N}, \item \tcode{basic_vec<T, \exposid{deduce-abi-t}<T, N>>} is
-   enabled\iref{simd.overview}, and
- \item
-   \tcode{basic_mask<sizeof(T),
-   \exposid{deduce-abi-t}<\exposid{integer-from}<sizeof(T)>, N>>} is enabled.
+\item
+  \tcode{\exposid{simd-size-v}<T, \exposid{deduce-abi-t}<T, N>>}
+  equals \tcode{N}, and
+\item
+  \tcode{basic_vec<T, \exposid{deduce-abi-t}<T, N>>}
+  is enabled\iref{simd.overview}.
 \end{itemize}
 
 \pnum
@@ -16863,6 +16629,12 @@ namespace std::simd {
       const basic_vec<T, Abi>& x, const typename basic_vec<T, Abi>::mask_type& mask,
       BinaryOperation binary_op = {}, type_identity_t<T> identity_element = @\seebelow@);
 
+  template<class T, class BinaryOperation = plus<>>
+    constexpr T reduce(const T&, BinaryOperation = {});
+  template<class T, class BinaryOperation = plus<>>
+    constexpr T reduce(const T& x, @\libconcept{same_as}@<bool> auto mask, BinaryOperation binary_op = {},
+                       type_identity_t<T> identity_element = @\seebelow@);
+
   template<class T, class Abi>
     constexpr T reduce_min(const basic_vec<T, Abi>&) noexcept;
   template<class T, class Abi>
@@ -16873,6 +16645,11 @@ namespace std::simd {
   template<class T, class Abi>
     constexpr T reduce_max(const basic_vec<T, Abi>&,
                            const typename basic_vec<T, Abi>::mask_type&) noexcept;
+
+  template<class T> constexpr T reduce_min(const T&) noexcept;
+  template<class T> constexpr T reduce_min(const T&, @\libconcept{same_as}@<bool> auto) noexcept;
+  template<class T> constexpr T reduce_max(const T&) noexcept;
+  template<class T> constexpr T reduce_max(const T&, @\libconcept{same_as}@<bool> auto) noexcept;
 
   // \ref{simd.loadstore}, load and store functions
   template<class V = @\seebelow@, ranges::@\libconcept{contiguous_range}@ R, class... Flags>
@@ -16966,33 +16743,33 @@ namespace std::simd {
 
   template<@\exposid{simd-size-type}@ N = @\seebelow@, @\exposconcept{simd-vec-type}@ V, class IdxMap>
     constexpr resize_t<N, V> permute(const V& v, IdxMap&& idxmap);
-  template<@\exposid{simd-size-type}@ N = @\seebelow@, @\exposconcept{simd-mask-type}@ M, class IdxMap>
-    constexpr resize_t<N, M> permute(const M& v, IdxMap&& idxmap);
+  template<@\exposid{simd-size-type}@ N = @\seebelow@, @\exposconcept{simd-mask-type}@ V, class IdxMap>
+    constexpr resize_t<N, V> permute(const V& v, IdxMap&& idxmap);
 
   // \ref{simd.permute.dynamic}, dynamic permute
   template<@\exposconcept{simd-vec-type}@ V, @\exposconcept{simd-integral}@ I>
     constexpr resize_t<I::size(), V> permute(const V& v, const I& indices);
-  template<@\exposconcept{simd-mask-type}@ M, @\exposconcept{simd-integral}@ I>
-    constexpr resize_t<I::size(), M> permute(const M& v, const I& indices);
+  template<@\exposconcept{simd-mask-type}@ V, @\exposconcept{simd-integral}@ I>
+    constexpr resize_t<I::size(), V> permute(const V& v, const I& indices);
 
   // \ref{simd.permute.mask}, mask permute
   template<@\exposconcept{simd-vec-type}@ V>
     constexpr V compress(const V& v, const typename V::mask_type& selector);
-  template<@\exposconcept{simd-mask-type}@ M>
-    constexpr M compress(const M& v, const type_identity_t<M>& selector);
+  template<@\exposconcept{simd-mask-type}@ V>
+    constexpr V compress(const V& v, const type_identity_t<V>& selector);
   template<@\exposconcept{simd-vec-type}@ V>
     constexpr V compress(const V& v, const typename V::mask_type& selector,
                          const typename V::value_type& fill_value);
-  template<@\exposconcept{simd-mask-type}@ M>
-    constexpr M compress(const M& v, const type_identity_t<M>& selector,
-                         const typename M::value_type& fill_value);
+  template<@\exposconcept{simd-mask-type}@ V>
+    constexpr V compress(const V& v, const type_identity_t<V>& selector,
+                         const typename V::value_type& fill_value);
 
   template<@\exposconcept{simd-vec-type}@ V>
     constexpr V expand(const V& v, const typename V::mask_type& selector,
                        const V& original = {});
-  template<@\exposconcept{simd-mask-type}@ M>
-    constexpr M expand(const M& v, const type_identity_t<M>& selector,
-                       const M& original = {});
+  template<@\exposconcept{simd-mask-type}@ V>
+    constexpr V expand(const V& v, const type_identity_t<V>& selector,
+                       const V& original = {});
 
   // \ref{simd.permute.memory}, memory permute
   template<class V = @\seebelow@, ranges::@\libconcept{contiguous_range}@ R, @\exposconcept{simd-integral}@ I, class... Flags>
@@ -17041,12 +16818,13 @@ namespace std::simd {
     constexpr auto chunk(const basic_mask<Bytes, Abi>& x) noexcept;
 
   template<class T, class... Abis>
-    constexpr basic_vec<T, @\exposid{deduce-abi-t}@<T, (basic_vec<T, Abis>::size() + ...)>>
-      cat(const basic_vec<T, Abis>&...) noexcept;
+    constexpr resize_t<(basic_vec<T, Abis>::size() + ...),
+      basic_vec<T, Abis...[0]>> cat(const basic_vec<T, Abis>&...) noexcept;
   template<size_t Bytes, class... Abis>
-    constexpr basic_mask<Bytes, @\exposid{deduce-abi-t}@<@\exposid{integer-from}@<Bytes>,
-                              (basic_mask<Bytes, Abis>::size() + ...)>>
-      cat(const basic_mask<Bytes, Abis>&...) noexcept;
+    constexpr resize_t<(basic_mask<Bytes, Abis>::size() + ...),
+      basic_mask<Bytes, Abis...[0]>> cat(const basic_mask<Bytes, Abis>&...) noexcept;
+
+  template<class T> constexpr T iota = @\seebelow@;
 
   // \ref{simd.alg}, algorithms
   template<class T, class Abi>
@@ -17074,8 +16852,12 @@ namespace std::simd {
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> acos(const V& x);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> asin(const V& x);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> atan(const V& x);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> atan2(const V0& y, const V1& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> atan2(const V& y, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> atan2(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> atan2(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> cos(const V& x);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> sin(const V& x);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> tan(const V& x);
@@ -17113,12 +16895,35 @@ namespace std::simd {
     constexpr basic_vec<T, Abi> abs(const basic_vec<T, Abi>& j);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> abs(const V& j);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> fabs(const V& x);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> hypot(const V0& x, const V1& y);
-  template<class V0, class V1, class V2>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1, V2> hypot(const V0& x, const V1& y, const V2& z);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> pow(const V0& x, const V1& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const V& y, const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const @\exposid{deduced-vec-t}@<V>& x, const @\exposid{deduced-vec-t}@<V>& y,
+                                    @\itcorr@ const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const @\exposid{deduced-vec-t}@<V>& x, const V& y,
+                                    @\itcorr@ const @\exposid{deduced-vec-t}@<V>& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const @\exposid{deduced-vec-t}@<V>& y,
+                                    @\itcorr@ const @\exposid{deduced-vec-t}@<V>& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> pow(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> pow(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> pow(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> sqrt(const V& x);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> erf(const V& x);
   template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> erfc(const V& x);
@@ -17140,28 +16945,92 @@ namespace std::simd {
     constexpr rebind_t<long long int, @\exposid{deduced-vec-t}@<V>> llround(const V& x);
   template<@\exposconcept{math-floating-point}@ V>
     constexpr @\exposid{deduced-vec-t}@<V> trunc(const V& x);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> fmod(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> remainder(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1>
-      remquo(const V0& x, const V1& y, rebind_t<int, @\exposid{math-common-simd-t}@<V0, V1>>* quo);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> copysign(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> nextafter(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> fdim(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> fmax(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1> fmin(const V0& x, const V1& y);
-  template<class V0, class V1, class V2>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1, V2> fma(const V0& x, const V1& y, const V2& z);
-  template<class V0, class V1, class V2>
-    constexpr @\exposid{math-common-simd-t}@<V0, V1, V2>
-      lerp(const V0& a, const V1& b, const V2& t) noexcept;
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmod(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmod(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmod(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> remainder(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> remainder(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> remainder(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V>
+      remquo(const V& x, const V& y, rebind_t<int, @\exposid{deduced-vec-t}@<V>>* quo);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V>
+      remquo(const @\exposid{deduced-vec-t}@<V>& x, const V& y, rebind_t<int, @\exposid{deduced-vec-t}@<V>>* quo);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V>
+      remquo(const V& x, const @\exposid{deduced-vec-t}@<V>& y, rebind_t<int, @\exposid{deduced-vec-t}@<V>>* quo);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> copysign(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> copysign(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> copysign(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> nextafter(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> nextafter(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> nextafter(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fdim(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fdim(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fdim(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmax(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmax(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmax(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmin(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmin(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fmin(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fma(const V& x, const V& y, const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fma(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fma(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fma(const V& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fma(const @\exposid{deduced-vec-t}@<V>& x, const @\exposid{deduced-vec-t}@<V>& y,
+                                  @\itcorr@ const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fma(const @\exposid{deduced-vec-t}@<V>& x, const V& y,
+                                  @\itcorr@ const @\exposid{deduced-vec-t}@<V>& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> fma(const V& x, const @\exposid{deduced-vec-t}@<V>& y,
+                                  @\itcorr@ const @\exposid{deduced-vec-t}@<V>& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V>
+      lerp(const V& a, const V& b, const V& t) noexcept;
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> lerp(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> lerp(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> lerp(const V& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> lerp(const @\exposid{deduced-vec-t}@<V>& x, const @\exposid{deduced-vec-t}@<V>& y,
+                                   @\itcorr@ const V& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> lerp(const @\exposid{deduced-vec-t}@<V>& x, const V& y,
+                                   @\itcorr@ const @\exposid{deduced-vec-t}@<V>& z);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr @\exposid{deduced-vec-t}@<V> lerp(const V& x, const @\exposid{deduced-vec-t}@<V>& y,
+                                   @\itcorr@ const @\exposid{deduced-vec-t}@<V>& z);
   template<@\exposconcept{math-floating-point}@ V>
     constexpr rebind_t<int, @\exposid{deduced-vec-t}@<V>> fpclassify(const V& x);
   template<@\exposconcept{math-floating-point}@ V>
@@ -17174,50 +17043,133 @@ namespace std::simd {
     constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type isnormal(const V& x);
   template<@\exposconcept{math-floating-point}@ V>
     constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type signbit(const V& x);
-  template<class V0, class V1>
-    constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type
-      isgreater(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type
-      isgreaterequal(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type
-      isless(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type
-      islessequal(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type
-      islessgreater(const V0& x, const V1& y);
-  template<class V0, class V1>
-    constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type
-      isunordered(const V0& x, const V1& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isgreater(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isgreater(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isgreater(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isgreaterequal(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isgreaterequal(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isgreaterequal(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isless(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isless(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isless(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      islessequal(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      islessequal(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      islessequal(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      islessgreater(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      islessgreater(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      islessgreater(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isunordered(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isunordered(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+      isunordered(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
   template<@\exposconcept{math-floating-point}@ V>
     @\exposid{deduced-vec-t}@<V> assoc_laguerre(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& n,
-                                    const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& x);
+                                   @\itcorr@ const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& x);
   template<@\exposconcept{math-floating-point}@ V>
     @\exposid{deduced-vec-t}@<V> assoc_legendre(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& l,
-                                    const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& x);
-  template<class V0, class V1>
-    @\exposid{math-common-simd-t}@<V0, V1> beta(const V0& x, const V1& y);
+                                   @\itcorr@ const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> beta(const V& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> beta(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> beta(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
   template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> comp_ellint_1(const V& k);
   template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> comp_ellint_2(const V& k);
-  template<class V0, class V1>
-    @\exposid{math-common-simd-t}@<V0, V1> comp_ellint_3(const V0& k, const V1& nu);
-  template<class V0, class V1>
-    @\exposid{math-common-simd-t}@<V0, V1> cyl_bessel_i(const V0& nu, const V1& x);
-  template<class V0, class V1>
-    @\exposid{math-common-simd-t}@<V0, V1> cyl_bessel_j(const V0& nu, const V1& x);
-  template<class V0, class V1>
-    @\exposid{math-common-simd-t}@<V0, V1> cyl_bessel_k(const V0& nu, const V1& x);
-  template<class V0, class V1>
-    @\exposid{math-common-simd-t}@<V0, V1> cyl_neumann(const V0& nu, const V1& x);
-  template<class V0, class V1>
-    @\exposid{math-common-simd-t}@<V0, V1> ellint_1(const V0& k, const V1& phi);
-  template<class V0, class V1>
-    @\exposid{math-common-simd-t}@<V0, V1> ellint_2(const V0& k, const V1& phi);
-  template<class V0, class V1, class V2>
-    @\exposid{math-common-simd-t}@<V0, V1, V2> ellint_3(const V0& k, const V1& nu, const V2& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> comp_ellint_3(const V& k, const V& nu);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> comp_ellint_3(const @\exposid{deduced-vec-t}@<V>& k, const V& nu);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> comp_ellint_3(const V& k, const @\exposid{deduced-vec-t}@<V>& nu);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_i(const V& nu, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_i(const @\exposid{deduced-vec-t}@<V>& nu, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_i(const V& nu, const @\exposid{deduced-vec-t}@<V>& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_j(const V& nu, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_j(const @\exposid{deduced-vec-t}@<V>& nu, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_j(const V& nu, const @\exposid{deduced-vec-t}@<V>& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_k(const V& nu, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_k(const @\exposid{deduced-vec-t}@<V>& nu, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_bessel_k(const V& nu, const @\exposid{deduced-vec-t}@<V>& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_neumann(const V& nu, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_neumann(const @\exposid{deduced-vec-t}@<V>& nu, const V& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> cyl_neumann(const V& nu, const @\exposid{deduced-vec-t}@<V>& x);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_1(const V& k, const V& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_1(const @\exposid{deduced-vec-t}@<V>& k, const V& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_1(const V& k, const @\exposid{deduced-vec-t}@<V>& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_2(const V& k, const V& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_2(const @\exposid{deduced-vec-t}@<V>& k, const V& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_2(const V& k, const @\exposid{deduced-vec-t}@<V>& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_3(const V& k, const V& nu, const V& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_3(const @\exposid{deduced-vec-t}@<V>& k, const V& nu, const V& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_3(const V& k, const @\exposid{deduced-vec-t}@<V>& nu, const V& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_3(const V& k, const V& nu, const @\exposid{deduced-vec-t}@<V>& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_3(const @\exposid{deduced-vec-t}@<V>& k, const @\exposid{deduced-vec-t}@<V>& nu,
+                             @\itcorr@ const V& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_3(const @\exposid{deduced-vec-t}@<V>& k, const V& nu,
+                             @\itcorr@ const @\exposid{deduced-vec-t}@<V>& phi);
+  template<@\exposconcept{math-floating-point}@ V>
+    @\exposid{deduced-vec-t}@<V> ellint_3(const V& k, const @\exposid{deduced-vec-t}@<V>& nu,
+                             @\itcorr@ const @\exposid{deduced-vec-t}@<V>& phi);
   template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> expint(const V& x);
   template<@\exposconcept{math-floating-point}@ V>
     @\exposid{deduced-vec-t}@<V> hermite(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& n, const V& x);
@@ -17239,11 +17191,22 @@ namespace std::simd {
 
   // \ref{simd.bit}, bit manipulation
   template<@\exposconcept{simd-vec-type}@ V> constexpr V byteswap(const V& v) noexcept;
+  template<@\exposconcept{simd-integral}@ V> constexpr V bit_reverse(const V& v) noexcept;
   template<@\exposconcept{simd-vec-type}@ V> constexpr V bit_ceil(const V& v);
   template<@\exposconcept{simd-vec-type}@ V> constexpr V bit_floor(const V& v) noexcept;
 
   template<@\exposconcept{simd-vec-type}@ V>
     constexpr typename V::mask_type has_single_bit(const V& v) noexcept;
+
+  template<@\exposconcept{simd-integral}@ VX, @\exposconcept{simd-integral}@ VS>
+    constexpr VX shl(const VX& x, const VS& s) noexcept;
+  template<@\exposconcept{simd-integral}@ V, class S>
+    constexpr V  shl(const V& x, S s) noexcept;
+
+  template<@\exposconcept{simd-integral}@ VX, @\exposconcept{simd-integral}@ VS>
+    constexpr VX shr(const VX& x, const VS& s) noexcept;
+  template<@\exposconcept{simd-integral}@ V, class S>
+    constexpr V  shr(const V& x, S s) noexcept;
 
   template<@\exposconcept{simd-vec-type}@ V0, @\exposconcept{simd-vec-type}@ V1>
     constexpr V0 rotl(const V0& v, const V1& s) noexcept;
@@ -17254,6 +17217,11 @@ namespace std::simd {
     constexpr V0 rotr(const V0& v, const V1& s) noexcept;
   template<@\exposconcept{simd-vec-type}@ V>
     constexpr V  rotr(const V& v, int s) noexcept;
+
+  template<@\exposconcept{simd-integral}@ V0, @\exposconcept{simd-integral}@ V1>
+    constexpr V0 bit_repeat(const V0& v, const V1& l);
+  template<@\exposconcept{simd-integral}@ V>
+    constexpr V  bit_repeat(const V& v, int l);
 
   template<@\exposconcept{simd-vec-type}@ V>
     constexpr rebind_t<make_signed_t<typename V::value_type>, V>
@@ -17273,6 +17241,16 @@ namespace std::simd {
   template<@\exposconcept{simd-vec-type}@ V>
     constexpr rebind_t<make_signed_t<typename V::value_type>, V>
       popcount(const V& v) noexcept;
+
+  template<@\exposconcept{simd-integral}@ V>
+    constexpr V bit_compress(const V& v, const V& m) noexcept;
+  template<@\exposconcept{simd-integral}@ V>
+    constexpr V bit_expand(const V& v, const V& m) noexcept;
+
+  template<@\exposconcept{simd-integral}@ V>
+    constexpr V bit_compress(const V& v, typename V::value_type m) noexcept;
+  template<@\exposconcept{simd-integral}@ V>
+    constexpr V bit_expand(const V& v, typename V::value_type m) noexcept;
 
   // \ref{simd.complex.math}, complex math
   template<@\exposconcept{simd-complex}@ V>
@@ -17316,9 +17294,9 @@ namespace std::simd {
   template<@\exposconcept{simd-complex}@ V> constexpr V pow(const V& x, const V& y);
 
   // \ref{simd.mask.class}, class template \tcode{basic_mask}
-  template<size_t Bytes, class Abi = @\exposid{native-abi}@<@\exposid{integer-from}@<Bytes>>> class basic_mask;
+  template<size_t Bytes, class Abi> class basic_mask;
   template<class T, @\exposid{simd-size-type}@ N = @\exposid{simd-size-v}@<T, @\exposid{native-abi}@<T>>>
-    using @\libmember{mask}{simd}@ = basic_mask<sizeof(T), @\exposid{deduce-abi-t}@<T, N>>;
+    using @\libmember{mask}{simd}@ = vec<T, N>::mask_type;
 
   // \ref{simd.mask.reductions}, reductions
   template<size_t Bytes, class Abi>
@@ -17445,15 +17423,21 @@ namespace std {
   using simd::byteswap;
   using simd::bit_ceil;
   using simd::bit_floor;
+  using simd::bit_reverse;
   using simd::has_single_bit;
+  using simd::shl;
+  using simd::shr;
   using simd::rotl;
   using simd::rotr;
+  using simd::bit_repeat;
   using simd::bit_width;
   using simd::countl_zero;
   using simd::countl_one;
   using simd::countr_zero;
   using simd::countr_one;
   using simd::popcount;
+  using simd::bit_compress;
+  using simd::bit_expand;
 
   // See \ref{simd.complex.math}, \tcode{vec} complex math
   using simd::real;
@@ -17489,10 +17473,6 @@ If \tcode{value} is present, the type \tcode{alignment<T, U>} is a
 (converting) loads and stores for the given type \tcode{T} on arrays of type
 \tcode{U}.
 \end{note}
-
-\pnum
-The behavior of a program that adds specializations for \tcode{alignment}
-is undefined.
 \end{itemdescr}
 
 \indexlibrarymember{rebind}{simd}
@@ -17506,22 +17486,21 @@ The member \tcode{type} is present if and only if
 \begin{itemize}
 \item \tcode{V} is a data-parallel type,
 \item \tcode{T} is a vectorizable type, and
-\item \tcode{\exposid{deduce-abi-t}<T, V::size()>} has a member type
-  \tcode{type}.
+\item \tcode{\exposid{deduce-abi-t}<T, V::size()>} names an ABI tag type.
 \end{itemize}
 
 \pnum
-If \tcode V is a specialization of \tcode{basic_vec}, let \tcode{Abi1} denote
+If \tcode{V} is a specialization of \tcode{basic_vec}, let \tcode{Abi1} denote
 an ABI tag such that \tcode{basic_vec<T, Abi1>::\brk{}size()} equals
 \tcode{V::size()}.
-If \tcode V is a specialization of \tcode{basic_mask}, let \tcode{Abi1}
+If \tcode{V} is a specialization of \tcode{basic_mask}, let \tcode{Abi1}
 denote an ABI tag such that \tcode{basic_mask<sizeof(T),
 Abi1>::\brk{}size()} equals \tcode{V::size()}.
 
 \pnum
 Where present, the member typedef \tcode{type} names \tcode{basic_vec<T, Abi1>}
-if \tcode V is a specialization of \tcode{basic_vec} or
-\tcode{basic_mask<sizeof(T), Abi1>} if \tcode V is a specialization of
+if \tcode{V} is a specialization of \tcode{basic_vec} or
+\tcode{basic_mask<sizeof(T), Abi1>} if \tcode{V} is a specialization of
 \tcode{basic_mask}.
 \end{itemdescr}
 
@@ -17532,34 +17511,33 @@ template<@\exposid{simd-size-type}@ N, class V> struct resize { using type = @\s
 
 \begin{itemdescr}
 \pnum
-Let \tcode{T} denote
+Let \tcode{Abi1} denote an ABI tag
 \begin{itemize}
  \item
-   \tcode{typename V::value_type} if \tcode{V} is a specialization of
-   \tcode{basic_vec},
+   such that \tcode{\exposid{simd-size-v}<typename V::value_type, Abi1>}
+   equals \tcode{N} if \tcode{V} is a specialization of \tcode{basic_vec},
  \item
-   otherwise \tcode{\exposid{integer-from}<\exposid{mask-element-size}<V>>} if
-   \tcode{V} is a specialization of \tcode{basic_mask}.
+   otherwise such that
+   \tcode{\exposid{mask-size-v}<\exposid{mask-element-size}<V>, Abi1>}
+   equals \tcode{N} if \tcode{V} is a specialization of \tcode{basic_mask}.
 \end{itemize}
 
 \pnum
 The member \tcode{type} is present if and only if
 \begin{itemize}
-\item \tcode{V} is a data-parallel type, and
-\item \tcode{\exposid{deduce-abi-t}<T, N>} has a member type \tcode{type}.
+\item
+  \tcode{V} is a data-parallel type, and
+\item
+  there exists at least one ABI tag
+  that satisfies the above constraints for \tcode{Abi1}.
 \end{itemize}
 
 \pnum
-If \tcode V is a specialization of \tcode{basic_vec}, let \tcode{Abi1} denote an
-ABI tag such that \tcode{basic_vec<T, Abi1>::\brk{}size()} equals \tcode{N}.
-If \tcode V is a specialization of \tcode{basic_mask}, let \tcode{Abi1}
-denote an ABI tag such that \tcode{basic_mask<sizeof(T), Abi1>::size()} equals \tcode{N}.
-
-\pnum
-Where present, the member typedef \tcode{type} names \tcode{basic_vec<T, Abi1>}
-if \tcode V is a specialization of \tcode{basic_vec} or
-\tcode{basic_mask<sizeof(T), Abi1>} if \tcode V is a specialization of
-\tcode{basic_mask}.
+Where present, the member typedef \tcode{type} names
+\tcode{basic_vec<typename V::value_type, Abi1>}
+if \tcode{V} is a specialization of \tcode{basic_vec}, or
+\tcode{basic_mask<\exposid{mask-element-size}<V>, Abi1>}
+if \tcode{V} is a specialization of \tcode{basic_mask}.
 \end{itemdescr}
 
 \rSec2[simd.flags]{Load and store flags}
@@ -17584,12 +17562,12 @@ The class template \tcode{flags} acts like an integer bit-flag for types.
 
 \pnum
 \constraints
-Every type in the parameter pack \tcode{Flags} is one of \tcode{\exposid{convert-flag}},
-\tcode{\exposid{aligned-flag}}, or \tcode{\exposid{over\-aligned-\brk{}flag}<N>}.
+Every type in the parameter pack \tcode{Flags} is one of \exposid{convert-flag},
+\exposid{aligned-flag}, or \tcode{\exposid{over\-aligned-\brk{}flag}<N>}.
 
 \rSec3[simd.flags.oper]{\tcode{flags} operators}
 
-\indexlibrarymember{operator|}{simd::flags}
+\indexlibrarymember{operator"|}{simd::flags}
 \begin{itemdecl}
 template<class... Other>
   friend consteval auto operator|(flags a, flags<Other...> b);
@@ -17897,7 +17875,7 @@ namespace std::simd {
 
     // \ref{simd.ctor}, \tcode{basic_vec} constructors
     template<class U>
-      constexpr explicit(@\seebelow@) basic_vec(U&& value) noexcept;
+      constexpr basic_vec(U&& value) noexcept;
     template<class U, class UAbi>
       constexpr explicit(@\seebelow@) basic_vec(const basic_vec<U, UAbi>&) noexcept;
     template<class G>
@@ -17984,7 +17962,8 @@ The specialization of \tcode{basic_vec<T, Abi>} is
 \begin{itemize}
  \item
     enabled, if \tcode{T} is a vectorizable type, and there exists value
-    \tcode{N} in the range \crange{1}{64}, such that \tcode{Abi} is
+    \tcode{N} in the range \crange{1}{64},
+    such that \tcode{Abi} names the ABI tag denoted by
     \tcode{\exposid{deduce-abi-t}<T, N>},
  \item
    otherwise, disabled, if \tcode{T} is not a vectorizable type,
@@ -17999,10 +17978,22 @@ deleted copy assignment.
 In addition only the \tcode{value_type}, \tcode{abi_type}, and
 \tcode{mask_type} members are present.
 
-If \tcode{basic_vec<T, Abi>} is enabled, then \tcode{basic_vec<T, Abi>} is
-trivially copyable, default-initialization of an object of such a type
-default-initializes all elements, and value-initialization value-initializes
-all elements\iref{dcl.init.general}.
+If \tcode{basic_vec<T, Abi>} is enabled, then
+\begin{itemize}
+\item
+  \tcode{basic_vec<T, Abi>} is trivially copyable,
+\item
+  default-initialization of an object of such a type
+  default-initializes all elements,
+\item
+  value-initialization value-initializes all elements\iref{dcl.init.general},
+\item
+  \tcode{basic_vec<T, Abi>::mask_type} is an alias
+  for an enabled specialization of \tcode{basic_mask}, and
+\item
+  \tcode{basic_vec<T, Abi>::size()} is equal to
+  \tcode{basic_vec<T, Abi>::mask_type::size()}.
+\end{itemize}
 
 \pnum
 \recommended
@@ -18024,7 +18015,7 @@ otherwise an unspecified non-array object type.
 
 \indexlibraryctor{basic_vec}
 \begin{itemdecl}
-template<class U> constexpr explicit(@\seebelow@) basic_vec(U&& value) noexcept;
+template<class U> constexpr basic_vec(U&& value) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -18033,29 +18024,25 @@ Let \tcode{From} denote the type \tcode{remove_cvref_t<U>}.
 
 \pnum
 \constraints
-\tcode{U} satisfies \tcode{\exposconcept{explicitly-convertible-to}<value_type>}.
+\begin{itemize}
+\item
+\tcode{U} satisfies \tcode{\libconcept{convertible_to}<value_type>} and
+\tcode{From} is not an arithmetic type and
+does not satisfy \exposconcept{constexpr-wrapper-like},
+\item
+\tcode{From} is an arithmetic type and
+the conversion from \tcode{From} to \tcode{value_type}
+is value-preserving\iref{simd.general}, or
+\item
+\tcode{From} satisfies \exposconcept{constexpr-wrapper-like},
+\tcode{remove_cvref_t<decltype(From::value)>} is an arithmetic type, and
+\tcode{From::value} is representable by \tcode{value_type}.
+\end{itemize}
 
 \pnum
 \effects
 Initializes each element to the value of the argument after conversion to
 \tcode{value_type}.
-
-\pnum
-\remarks
-The expression inside \tcode{explicit} evaluates to \tcode{false} if and only if
-\tcode{U} satisfies \tcode{\libconcept{convertible_to}<value_type>}, and either
-\begin{itemize}
- \item
-   \tcode{From} is not an arithmetic type and does not satisfy
-   \exposconcept{constexpr-wrapper-like},
- \item
-   \tcode{From} is an arithmetic type and the conversion from \tcode{From} to
-   \tcode{value_type} is value-preserving\iref{simd.general}, or
- \item
-   \tcode{From} satisfies \exposconcept{constexpr-wrapper-like},
-   \tcode{remove_cvref_t<decltype(From::value)>} is an arithmetic type, and
-   \tcode{From::value} is representable by \tcode{value_type}.
-\end{itemize}
 \end{itemdescr}
 
 \indexlibraryctor{basic_vec}
@@ -18151,7 +18138,7 @@ Let \tcode{mask} be \tcode{mask_type(true)} for the overload with no
 \pnum
 \mandates
 If the template parameter pack \tcode{Flags} does not contain
-\tcode{\exposid{convert-flag}}, then the conversion from
+\exposid{convert-flag}, then the conversion from
 \tcode{ranges::range_value_t<R>} to \tcode{value_type} is value-preserving.
 
 \pnum
@@ -18159,7 +18146,7 @@ If the template parameter pack \tcode{Flags} does not contain
 \begin{itemize}
  \item
    If the template parameter pack \tcode{Flags} contains
-   \tcode{\exposid{aligned-flag}}, \tcode{ranges::data(r)} points to
+   \exposid{aligned-flag}, \tcode{ranges::data(r)} points to
    storage aligned by \tcode{alignment_v<basic_vec,
    ranges::range_value_t<R>>}.
  \item
@@ -18386,7 +18373,7 @@ Decrements every element by one.
 A copy of \tcode{*this} before decrementing.
 \end{itemdescr}
 
-\indexlibrarymember{operator!}{basic_vec}
+\indexlibrarymember{operator"!}{basic_vec}
 \begin{itemdecl}
 constexpr mask_type operator!() const noexcept;
 \end{itemdecl}
@@ -18402,7 +18389,7 @@ A \tcode{basic_mask} object with the $i^\text{th}$ element set to
 \tcode{!operator[]($i$)} for all $i$ in the range of \range{0}{size()}.
 \end{itemdescr}
 
-\indexlibrarymember{operator~}{basic_vec}
+\indexlibrarymember{operator\~{}}{basic_vec}
 \begin{itemdecl}
 constexpr basic_vec operator~() const noexcept;
 \end{itemdecl}
@@ -18459,7 +18446,7 @@ A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
 \indexlibrarymember{operator/}{basic_vec}
 \indexlibrarymember{operator\%}{basic_vec}
 \indexlibrarymember{operator\&}{basic_vec}
-\indexlibrarymember{operator|}{basic_vec}
+\indexlibrarymember{operator"|}{basic_vec}
 \indexlibrarymember{operator\caret}{basic_vec}
 \indexlibrarymember{operator<<}{basic_vec}
 \indexlibrarymember{operator>>}{basic_vec}
@@ -18523,7 +18510,7 @@ $i$ in the range of \range{0}{size()}.
 \indexlibrarymember{operator/=}{basic_vec}
 \indexlibrarymember{operator\%=}{basic_vec}
 \indexlibrarymember{operator\&=}{basic_vec}
-\indexlibrarymember{operator|=}{basic_vec}
+\indexlibrarymember{operator"|=}{basic_vec}
 \indexlibrarymember{operator\caret=}{basic_vec}
 \indexlibrarymember{operator<<=}{basic_vec}
 \indexlibrarymember{operator>>=}{basic_vec}
@@ -18583,7 +18570,7 @@ Equivalent to: \tcode{return operator \placeholder{op} (lhs, basic_vec(n));}
 \rSec3[simd.comparison]{Comparison operators}
 
 \indexlibrarymember{operator==}{basic_vec}
-\indexlibrarymember{operator!=}{basic_vec}
+\indexlibrarymember{operator"!=}{basic_vec}
 \indexlibrarymember{operator>=}{basic_vec}
 \indexlibrarymember{operator<=}{basic_vec}
 \indexlibrarymember{operator>}{basic_vec}
@@ -18713,6 +18700,50 @@ The default argument for \tcode{identity_element} is equal to
 \end{itemize}
 \end{itemdescr}
 
+\begin{itemdecl}
+template<class T, class BinaryOperation = plus<>>
+  constexpr T reduce(const T& x, BinaryOperation binary_op = {});
+template<class T, class BinaryOperation = plus<>>
+  constexpr T reduce(const T& x, @\libconcept{same_as}@<bool> auto mask, BinaryOperation binary_op = {},
+                     type_identity_t<T> identity_element = @\seebelow@);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{mask} be \tcode{true} for the overload with no \tcode{mask} parameter.
+
+\pnum
+\constraints
+\begin{itemize}
+\item \tcode{T} is vectorizable.
+\item \tcode{BinaryOperation} models
+  \tcode{\exposconcept{reduction-binary-operation}<T>}.
+\item An argument for \tcode{identity_element} is provided for the invocation,
+  unless \tcode{BinaryOperation} is one of \tcode{plus<>}, \tcode{multiplies<>},
+  \tcode{bit_and<>}, \tcode{bit_or<>}, or \tcode{bit_xor<>}.
+\end{itemize}
+
+\pnum
+\returns
+If \tcode{mask} is \tcode{false}, returns \tcode{identity_element}.
+Otherwise, returns \tcode{x}.
+
+\pnum
+\throws
+Nothing.
+
+\pnum
+\remarks
+The default argument for \tcode{identity_element} is equal to
+\begin{itemize}
+\item \tcode{T()} if \tcode{BinaryOperation} is \tcode{plus<>},
+\item \tcode{T(1)} if \tcode{BinaryOperation} is \tcode{multiplies<>},
+\item \tcode{T(\~{}T())} if \tcode{BinaryOperation} is \tcode{bit_and<>},
+\item \tcode{T()} if \tcode{BinaryOperation} is \tcode{bit_or<>}, or
+\item \tcode{T()} if \tcode{BinaryOperation} is \tcode{bit_xor<>}.
+\end{itemize}
+\end{itemdescr}
+
 \indexlibrarymember{reduce_min}{simd}
 \begin{itemdecl}
 template<class T, class Abi> constexpr T reduce_min(const basic_vec<T, Abi>& x) noexcept;
@@ -18733,7 +18764,7 @@ The value of an element \tcode{x[$j$]} for which \tcode{x[$i$] < x[$j$]} is
 \begin{itemdecl}
 template<class T, class Abi>
   constexpr T reduce_min(
-    const basic_vec<T, Abi>&, const typename basic_vec<T, Abi>::mask_type&) noexcept;
+    const basic_vec<T, Abi>& x, const typename basic_vec<T, Abi>::mask_type& mask) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -18770,7 +18801,7 @@ The value of an element \tcode{x[$j$]} for which \tcode{x[$j$] < x[$i$]} is
 \begin{itemdecl}
 template<class T, class Abi>
   constexpr T reduce_max(
-    const basic_vec<T, Abi>&, const typename basic_vec<T, Abi>::mask_type&) noexcept;
+    const basic_vec<T, Abi>& x, const typename basic_vec<T, Abi>::mask_type& mask) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -18781,10 +18812,36 @@ template<class T, class Abi>
 \pnum
 \returns
 If \tcode{none_of(mask)} is \tcode{true}, returns
-\tcode{numeric_limits<V::value_type>::lowest()}.
+\tcode{numeric_limits<T>::lowest()}.
 Otherwise, returns the value of a selected element \tcode{x[$j$]} for which
 \tcode{x[$j$] < x[$i$]} is \tcode{false} for all selected indices $i$ of
 \tcode{mask}.
+\end{itemdescr}
+
+\begin{itemdecl}
+template<class T> constexpr T reduce_min(const T& x) noexcept;
+template<class T> constexpr T reduce_min(const T& x, @\libconcept{same_as}@<bool> auto mask) noexcept;
+template<class T> constexpr T reduce_max(const T& x) noexcept;
+template<class T> constexpr T reduce_max(const T& x, @\libconcept{same_as}@<bool> auto mask) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{mask} be \tcode{true} for the overloads with no \tcode{mask} parameter.
+
+\pnum
+\constraints
+\begin{itemize}
+\item \tcode{T} is vectorizable.
+\item \tcode{T} models \tcode{totally_ordered}.
+\end{itemize}
+
+\pnum
+\returns
+If \tcode{mask} is \tcode{false}, returns \tcode{numeric_limits<T>::max()} for
+\tcode{reduce_min} and \tcode{numeric_limits<T>::lowest()} for
+\tcode{reduce_max}.
+Otherwise, returns \tcode{x}.
 \end{itemdescr}
 
 \rSec3[simd.loadstore]{Load and store functions}
@@ -18900,7 +18957,7 @@ Let
    \tcode{V} is an enabled specialization of \tcode{basic_vec}, and
  \item
    if the template parameter pack \tcode{Flags} does not contain
-   \tcode{\exposid{convert-flag}}, then the conversion from
+   \exposid{convert-flag}, then the conversion from
    \tcode{ranges::range_value_t<R>} to \tcode{V::value_type} is
    value-preserving.
 \end{itemize}
@@ -18916,7 +18973,7 @@ Let
    parameter.
  \item
    If the template parameter pack \tcode{Flags} contains
-   \tcode{\exposid{aligned-flag}}, \tcode{ranges::data(r)} points to storage
+   \exposid{aligned-flag}, \tcode{ranges::data(r)} points to storage
    aligned by \tcode{alignment_v<V, ranges::range_value_t<R>>}.
  \item
    If the template parameter pack \tcode{Flags} contains
@@ -19063,7 +19120,7 @@ Let
    \tcode{ranges::range_value_t<R>} is a vectorizable type, and
  \item
    if the template parameter pack \tcode{Flags} does not contain
-   \tcode{\exposid{convert-flag}}, then the conversion from \tcode{T} to
+   \exposid{convert-flag}, then the conversion from \tcode{T} to
    \tcode{ranges::range_value_t<R>} is value-preserving.
 \end{itemize}
 
@@ -19078,7 +19135,7 @@ Let
    parameter.
  \item
    If the template parameter pack \tcode{Flags} contains
-   \tcode{\exposid{aligned-flag}}, \tcode{ranges::data(r)} points to storage
+   \exposid{aligned-flag}, \tcode{ranges::data(r)} points to storage
    aligned by \tcode{alignment_v<basic_vec<T, Abi>,
    ranges::range_value_t<R>>}.
  \item
@@ -19100,8 +19157,8 @@ For all $i$ in the range of \range{0}{basic_vec<T, Abi>::size()}, if
 \begin{itemdecl}
 template<@\exposid{simd-size-type}@ N = @\seebelow@, @\exposconcept{simd-vec-type}@ V, class IdxMap>
   constexpr resize_t<N, V> permute(const V& v, IdxMap&& idxmap);
-template<@\exposid{simd-size-type}@ N = @\seebelow@, @\exposconcept{simd-mask-type}@ M, class IdxMap>
-  constexpr resize_t<N, M> permute(const M& v, IdxMap&& idxmap);
+template<@\exposid{simd-size-type}@ N = @\seebelow@, @\exposconcept{simd-mask-type}@ V, class IdxMap>
+  constexpr resize_t<N, V> permute(const V& v, IdxMap&& idxmap);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -19159,8 +19216,8 @@ The default argument for template parameter \tcode{N} is \tcode{V::size()}.
 \begin{itemdecl}
 template<@\exposconcept{simd-vec-type}@ V, @\exposconcept{simd-integral}@ I>
   constexpr resize_t<I::size(), V> permute(const V& v, const I& indices);
-template<@\exposconcept{simd-mask-type}@ M, @\exposconcept{simd-integral}@ I>
-  constexpr resize_t<I::size(), M> permute(const M& v, const I& indices);
+template<@\exposconcept{simd-mask-type}@ V, @\exposconcept{simd-integral}@ I>
+  constexpr resize_t<I::size(), V> permute(const V& v, const I& indices);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -19181,8 +19238,8 @@ the range \range{0}{I::size()}.
 \begin{itemdecl}
 template<@\exposconcept{simd-vec-type}@ V>
   constexpr V compress(const V& v, const typename V::mask_type& selector);
-template<@\exposconcept{simd-mask-type}@ M>
-  constexpr M compress(const M& v, const type_identity_t<M>& selector);
+template<@\exposconcept{simd-mask-type}@ V>
+  constexpr V compress(const V& v, const type_identity_t<V>& selector);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -19214,9 +19271,9 @@ for all $i$ in the range \range{0}{V::size()}.
 template<@\exposconcept{simd-vec-type}@ V>
   constexpr V compress(const V& v, const typename V::mask_type& selector,
                        const typename V::value_type& fill_value);
-template<@\exposconcept{simd-mask-type}@ M>
-  constexpr M compress(const M& v, const type_identity_t<M>& selector,
-                       const typename M::value_type& fill_value);
+template<@\exposconcept{simd-mask-type}@ V>
+  constexpr V compress(const V& v, const type_identity_t<V>& selector,
+                       const typename V::value_type& fill_value);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -19243,8 +19300,8 @@ for all $i$ in the range \range{0}{V::size()}.
 \begin{itemdecl}
 template<@\exposconcept{simd-vec-type}@ V>
   constexpr V expand(const V& v, const typename V::mask_type& selector, const V& original = {});
-template<@\exposconcept{simd-mask-type}@ M>
-  constexpr M expand(const M& v, const type_identity_t<M>& selector, const M& original = {});
+template<@\exposconcept{simd-mask-type}@ V>
+  constexpr V expand(const V& v, const type_identity_t<V>& selector, const V& original = {});
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -19256,7 +19313,7 @@ Let:
 elements in \tcode{selector}, in ascending order.
 \item
 \tcode{\exposidnc{bit-lookup}($b$)} be a function which returns the index
-where $b$ appears in \tcode{\exposid{set-indices}}.
+where $b$ appears in \exposid{set-indices}.
 \item
 \tcode{\exposidnc{select-value}($i$)} be a function which returns
 \tcode{v[\exposidnc{bit-lookup}($i$)]} if \tcode{selector[$i$]} is
@@ -19548,28 +19605,14 @@ Equivalent to: \tcode{return chunk<resize_t<N, basic_mask<Bytes, Abi>>>(x);}
 \indexlibrarymember{cat}{simd}
 \begin{itemdecl}
 template<class T, class... Abis>
-  constexpr vec<T, (basic_vec<T, Abis>::size() + ...)>
-    cat(const basic_vec<T, Abis>&... xs) noexcept;
+  constexpr resize_t<(basic_vec<T, Abis>::size() + ...),
+    basic_vec<T, Abis...[0]>> cat(const basic_vec<T, Abis>&... xs) noexcept;
 template<size_t Bytes, class... Abis>
-  constexpr basic_mask<Bytes, @\exposid{deduce-abi-t}@<@\exposid{integer-from}@<Bytes>,
-                            (basic_mask<Bytes, Abis>::size() + ...)>>
-    cat(const basic_mask<Bytes, Abis>&... xs) noexcept;
+  constexpr resize_t<(basic_mask<Bytes, Abis>::size() + ...),
+    basic_mask<Bytes, Abis...[0]>> cat(const basic_mask<Bytes, Abis>&... xs) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
-\pnum
-\constraints
-\begin{itemize}
- \item
-   For the first overload \tcode{vec<T, (basic_vec<T, Abis>::size() + ...)>}
-   is enabled.
- \item
-   For the second overload
-   \tcode{basic_mask<Bytes,
-   \exposid{deduce-abi-t}<\exposid{integer-from}<Bytes>,
-   (basic_mask<Bytes, Abis>::size() + ...)>>} is enabled.
-\end{itemize}
-
 \pnum
 \returns
 A data-parallel object initialized with the concatenated values in the
@@ -19578,6 +19621,29 @@ A data-parallel object initialized with the concatenated values in the
 parameter in the \tcode{xs} pack is copied to the return value's element with
 index $i$ + the sum of the width of the first $j$ parameters in the \tcode{xs}
 pack.
+\end{itemdescr}
+
+\indexlibrarymember{iota}{simd}
+\begin{itemdecl}
+template<class T> constexpr T iota = @\seebelow@;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\mandates
+Either \tcode{T} is vectorizable and \tcode{is_arithmetic_v<T>} is \tcode{true}, or
+\begin{itemize}
+\item \tcode{T} is an enabled specialization of \tcode{basic_vec},
+\item \tcode{is_arithmetic_v<typename T::value_type>} is \tcode{true}, and
+\item $\tcode{T::size() - 1} \le \tcode{numeric_limits<typename T::value_type>::max()}$.
+\end{itemize}
+
+\pnum
+\remarks
+If \tcode{is_arithmetic_v<T>} is \tcode{true},
+the value of \tcode{iota<T>} is equal to \tcode{T()}.
+Otherwise, the value of \tcode{iota<T>} is equal to
+\tcode{T([](typename T::value_type i) \{ return i; \})}.
 \end{itemdescr}
 
 \rSec3[simd.alg]{Algorithms}
@@ -19681,126 +19747,161 @@ Equivalent to:
 \begin{codeblock}
 return @\exposid{simd-select-impl}@(c, a, b);
 \end{codeblock}
-where \tcode{\exposid{simd-select-impl}} is found by argument-dependent
+where \exposid{simd-select-impl} is found by argument-dependent
 lookup\iref{basic.lookup.argdep} contrary to \ref{contents}.
 \end{itemdescr}
 
 \rSec3[simd.math]{Mathematical functions}
 
-\indexlibrarymember{ilogb}{simd}
-\indexlibrarymember{ldexp}{simd}
-\indexlibrarymember{scalbn}{simd}
-\indexlibrarymember{scalbln}{simd}
-\indexlibrarymember{abs}{simd}
-\indexlibrarymember{abs}{simd}
-\indexlibrarymember{fabs}{simd}
-\indexlibrarymember{ceil}{simd}
-\indexlibrarymember{floor}{simd}
-\indexlibrarymember{nearbyint}{simd}
-\indexlibrarymember{rint}{simd}
-\indexlibrarymember{lrint}{simd}
-\indexlibrarymember{llrint}{simd}
-\indexlibrarymember{round}{simd}
-\indexlibrarymember{lround}{simd}
-\indexlibrarymember{llround}{simd}
-\indexlibrarymember{fmod}{simd}
-\indexlibrarymember{trunc}{simd}
-\indexlibrarymember{remainder}{simd}
-\indexlibrarymember{copysign}{simd}
-\indexlibrarymember{nextafter}{simd}
-\indexlibrarymember{fdim}{simd}
-\indexlibrarymember{fmax}{simd}
-\indexlibrarymember{fmin}{simd}
-\indexlibrarymember{fma}{simd}
-\indexlibrarymember{fpclassify}{simd}
-\indexlibrarymember{isfinite}{simd}
-\indexlibrarymember{isinf}{simd}
-\indexlibrarymember{isnan}{simd}
-\indexlibrarymember{isnormal}{simd}
-\indexlibrarymember{signbit}{simd}
-\indexlibrarymember{isgreater}{simd}
-\indexlibrarymember{isgreaterequal}{simd}
-\indexlibrarymember{isless}{simd}
-\indexlibrarymember{islessequal}{simd}
-\indexlibrarymember{islessgreater}{simd}
-\indexlibrarymember{isunordered}{simd}
 \begin{itemdecl}
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr rebind_t<int, @\exposid{deduced-vec-t}@<V>> ilogb(const V& x);
+  constexpr rebind_t<int, @\exposid{deduced-vec-t}@<V>> @\libmember{ilogb}{simd}@(const V& x);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr @\exposid{deduced-vec-t}@<V> ldexp(const V& x, const rebind_t<int, @\exposid{deduced-vec-t}@<V>>& exp);
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{abs}{simd}@(const V& j);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr @\exposid{deduced-vec-t}@<V> scalbn(const V& x, const rebind_t<int, @\exposid{deduced-vec-t}@<V>>& n);
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{fabs}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{ceil}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{floor}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{nearbyint}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{rint}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  rebind_t<long int, @\exposid{deduced-vec-t}@<V>> @\libmember{lrint}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  rebind_t<long long int, @\exposid{deduced-vec-t}@<V>> @\libmember{llrint}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{round}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr rebind_t<long int, @\exposid{deduced-vec-t}@<V>> @\libmember{lround}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr rebind_t<long long int, @\exposid{deduced-vec-t}@<V>> @\libmember{llround}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{fmod}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fmod(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fmod(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{trunc}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{remainder}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> remainder(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> remainder(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{copysign}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> copysign(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> copysign(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{nextafter}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> nextafter(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> nextafter(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{fdim}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fdim(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fdim(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{fmax}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fmax(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fmax(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{fmin}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fmin(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fmin(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{fma}{simd}@(const V& x, const V& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fma(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fma(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> fma(const V& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
 template<@\exposconcept{math-floating-point}@ V>
   constexpr @\exposid{deduced-vec-t}@<V>
-    scalbln(const V& x, const rebind_t<long int, @\exposid{deduced-vec-t}@<V>>& n);
-template<@\libconcept{signed_integral}@ T, class Abi>
-  constexpr basic_vec<T, Abi> abs(const basic_vec<T, Abi>& j);
+    fma(const @\exposid{deduced-vec-t}@<V>& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr @\exposid{deduced-vec-t}@<V> abs(const V& j);
+  constexpr @\exposid{deduced-vec-t}@<V>
+    fma(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr @\exposid{deduced-vec-t}@<V> fabs(const V& x);
+  constexpr @\exposid{deduced-vec-t}@<V>
+    fma(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const @\exposid{deduced-vec-t}@<V>& z);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr @\exposid{deduced-vec-t}@<V> ceil(const V& x);
+  constexpr rebind_t<int, @\exposid{deduced-vec-t}@<V>> @\libmember{fpclassify}{simd}@(const V& x);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr @\exposid{deduced-vec-t}@<V> floor(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type @\libmember{isfinite}{simd}@(const V& x);
 template<@\exposconcept{math-floating-point}@ V>
-  @\exposid{deduced-vec-t}@<V> nearbyint(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type @\libmember{isinf}{simd}@(const V& x);
 template<@\exposconcept{math-floating-point}@ V>
-  @\exposid{deduced-vec-t}@<V> rint(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type @\libmember{isnan}{simd}@(const V& x);
 template<@\exposconcept{math-floating-point}@ V>
-  rebind_t<long int, @\exposid{deduced-vec-t}@<V>> lrint(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type @\libmember{isnormal}{simd}@(const V& x);
 template<@\exposconcept{math-floating-point}@ V>
-  rebind_t<long long int, @\exposid{deduced-vec-t}@<V>> llrint(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type @\libmember{signbit}{simd}@(const V& x);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr @\exposid{deduced-vec-t}@<V> round(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type @\libmember{isgreater}{simd}@(const V& x, const V& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr rebind_t<long int, @\exposid{deduced-vec-t}@<V>> lround(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type isgreater(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr rebind_t<long long int, @\exposid{deduced-vec-t}@<V>> llround(const V& x);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> fmod(const V0& x, const V1& y);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type isgreater(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr @\exposid{deduced-vec-t}@<V> trunc(const V& x);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> remainder(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> copysign(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> nextafter(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> fdim(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> fmax(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> fmin(const V0& x, const V1& y);
-template<class V0, class V1, class V2>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1, V2> fma(const V0& x, const V1& y, const V2& z);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    @\libmember{isgreaterequal}{simd}@(const V& x, const V& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr rebind_t<int, @\exposid{deduced-vec-t}@<V>> fpclassify(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    isgreaterequal(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type isfinite(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    isgreaterequal(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type isinf(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    @\libmember{isless}{simd}@(const V& x, const V& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type isnan(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    isless(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type isnormal(const V& x);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    isless(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
 template<@\exposconcept{math-floating-point}@ V>
-  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type signbit(const V& x);
-template<class V0, class V1>
-  constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type isgreater(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type
-    isgreaterequal(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type isless(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type islessequal(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type islessgreater(const V0& x, const V1& y);
-template<class V0, class V1>
-  constexpr typename @\exposid{math-common-simd-t}@<V0, V1>::mask_type isunordered(const V0& x, const V1& y);
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    @\libmember{islessequal}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    islessequal(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    islessequal(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    @\libmember{islessgreater}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    islessgreater(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    islessgreater(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    @\libmember{isunordered}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    isunordered(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr typename @\exposid{deduced-vec-t}@<V>::mask_type
+    isunordered(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -19810,9 +19911,9 @@ template with the name \tcode{\placeholder{math-func}}.
 Let \tcode{\placeholder{math-func-vec}} denote:
 \begin{codeblock}
 template<class... Args>
-Ret @\placeholder{math-func-vec}@(Args... args) {
+Ret @\placeholder{math-func-vec}@(const Args&... args) {
   return Ret([&](@\exposid{simd-size-type}@ i) {
-    return @\placeholder{math-func}@(@\exposid{make-compatible-simd-t}@<Ret, Args>(args)[i]...);
+    return @\placeholder{math-func}@(@\exposid{deduced-vec-t}@<V>(args)[i]...);
   });
 }
 \end{codeblock}
@@ -19820,7 +19921,7 @@ Ret @\placeholder{math-func-vec}@(Args... args) {
 \pnum
 \returns
 A value \tcode{ret} of type \tcode{Ret}, that is element-wise equal to the
-result of calling \tcode{\placeholder{math-func-vec}} with the arguments of the above
+result of calling \tcode{\placeholder{math-func-vec}} with the parameters of the above
 functions.
 If in an invocation of a scalar overload of \tcode{\placeholder{math-func}} for index
 \tcode{i} in \tcode{\placeholder{math-func-vec}} a domain, pole, or range error would
@@ -19831,137 +19932,206 @@ occur, the value of \tcode{ret[i]} is unspecified.
 It is unspecified whether \tcode{errno}\iref{errno} is accessed.
 \end{itemdescr}
 
-\indexlibrarymember{acos}{simd}
-\indexlibrarymember{asin}{simd}
-\indexlibrarymember{atan}{simd}
-\indexlibrarymember{atan2}{simd}
-\indexlibrarymember{cos}{simd}
-\indexlibrarymember{sin}{simd}
-\indexlibrarymember{tan}{simd}
-\indexlibrarymember{acosh}{simd}
-\indexlibrarymember{asinh}{simd}
-\indexlibrarymember{atanh}{simd}
-\indexlibrarymember{cosh}{simd}
-\indexlibrarymember{sinh}{simd}
-\indexlibrarymember{tanh}{simd}
-\indexlibrarymember{exp}{simd}
-\indexlibrarymember{exp2}{simd}
-\indexlibrarymember{expm1}{simd}
-\indexlibrarymember{log}{simd}
-\indexlibrarymember{log10}{simd}
-\indexlibrarymember{log1p}{simd}
-\indexlibrarymember{log2}{simd}
-\indexlibrarymember{logb}{simd}
-\indexlibrarymember{cbrt}{simd}
-\indexlibrarymember{hypot}{simd}
-\indexlibrarymember{hypot}{simd}
-\indexlibrarymember{pow}{simd}
-\indexlibrarymember{sqrt}{simd}
-\indexlibrarymember{erf}{simd}
-\indexlibrarymember{erfc}{simd}
-\indexlibrarymember{lgamma}{simd}
-\indexlibrarymember{tgamma}{simd}
-\indexlibrarymember{lerp}{simd}
-\indexlibrarymember{assoc_laguerre}{simd}
-\indexlibrarymember{assoc_legendre}{simd}
-\indexlibrarymember{beta}{simd}
-\indexlibrarymember{comp_ellint_1}{simd}
-\indexlibrarymember{comp_ellint_2}{simd}
-\indexlibrarymember{comp_ellint_3}{simd}
-\indexlibrarymember{cyl_bessel_i}{simd}
-\indexlibrarymember{cyl_bessel_j}{simd}
-\indexlibrarymember{cyl_bessel_k}{simd}
-\indexlibrarymember{cyl_neumann}{simd}
-\indexlibrarymember{ellint_1}{simd}
-\indexlibrarymember{ellint_2}{simd}
-\indexlibrarymember{ellint_3}{simd}
-\indexlibrarymember{expint}{simd}
-\indexlibrarymember{hermite}{simd}
-\indexlibrarymember{laguerre}{simd}
-\indexlibrarymember{legendre}{simd}
-\indexlibrarymember{riemann_zeta}{simd}
-\indexlibrarymember{sph_bessel}{simd}
-\indexlibrarymember{sph_legendre}{simd}
-\indexlibrarymember{sph_neumann}{simd}
 \begin{itemdecl}
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> acos(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> asin(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> atan(const V& x);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> atan2(const V0& y, const V1& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> cos(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> sin(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> tan(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> acosh(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> asinh(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> atanh(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> cosh(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> sinh(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> tanh(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> exp(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> exp2(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> expm1(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> log(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> log10(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> log1p(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> log2(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> logb(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> cbrt(const V& x);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> hypot(const V0& x, const V1& y);
-template<class V0, class V1, class V2>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1, V2> hypot(const V0& x, const V1& y, const V2& z);
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> pow(const V0& x, const V1& y);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> sqrt(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> erf(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> erfc(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> lgamma(const V& x);
-template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> tgamma(const V& x);
-template<class V0, class V1, class V2>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1, V2> lerp(const V0& a, const V1& b, const V2& t) noexcept;
 template<@\exposconcept{math-floating-point}@ V>
-  @\exposid{deduced-vec-t}@<V> assoc_laguerre(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& n, const
-    rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& x);
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{ldexp}{simd}@(const V& x, const rebind_t<int, @\exposid{deduced-vec-t}@<V>>& exp);
 template<@\exposconcept{math-floating-point}@ V>
-  @\exposid{deduced-vec-t}@<V> assoc_legendre(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& l, const
-    rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& x);
-template<class V0, class V1>
-  @\exposid{math-common-simd-t}@<V0, V1> beta(const V0& x, const V1& y);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> comp_ellint_1(const V& k);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> comp_ellint_2(const V& k);
-template<class V0, class V1>
-  @\exposid{math-common-simd-t}@<V0, V1> comp_ellint_3(const V0& k, const V1& nu);
-template<class V0, class V1>
-  @\exposid{math-common-simd-t}@<V0, V1> cyl_bessel_i(const V0& nu, const V1& x);
-template<class V0, class V1>
-  @\exposid{math-common-simd-t}@<V0, V1> cyl_bessel_j(const V0& nu, const V1& x);
-template<class V0, class V1>
-  @\exposid{math-common-simd-t}@<V0, V1> cyl_bessel_k(const V0& nu, const V1& x);
-template<class V0, class V1>
-  @\exposid{math-common-simd-t}@<V0, V1> cyl_neumann(const V0& nu, const V1& x);
-template<class V0, class V1>
-  @\exposid{math-common-simd-t}@<V0, V1> ellint_1(const V0& k, const V1& phi);
-template<class V0, class V1>
-  @\exposid{math-common-simd-t}@<V0, V1> ellint_2(const V0& k, const V1& phi);
-template<class V0, class V1, class V2>
-  @\exposid{math-common-simd-t}@<V0, V1, V2> ellint_3(const V0& k, const V1& nu, const V2& phi);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> expint(const V& x);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> hermite(const rebind_t<unsigned,
-@\exposid{deduced-vec-t}@<V>>& n, const V& x);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> laguerre(const rebind_t<unsigned,
-@\exposid{deduced-vec-t}@<V>>& n, const V& x);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> legendre(const rebind_t<unsigned,
-@\exposid{deduced-vec-t}@<V>>& l, const V& x);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> riemann_zeta(const V& x);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> sph_bessel(const rebind_t<unsigned,
-@\exposid{deduced-vec-t}@<V>>& n, const V& x);
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{scalbn}{simd}@(const V& x, const rebind_t<int, @\exposid{deduced-vec-t}@<V>>& n);
 template<@\exposconcept{math-floating-point}@ V>
-  @\exposid{deduced-vec-t}@<V> sph_legendre(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& l,
-                                 const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m,
-                                 const V& theta);
-template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> sph_neumann(const rebind_t<unsigned,
-@\exposid{deduced-vec-t}@<V>>& n, const V& x);
+  constexpr @\exposid{deduced-vec-t}@<V>
+    @\libmember{scalbln}{simd}@(const V& x, const rebind_t<long int, @\exposid{deduced-vec-t}@<V>>& n);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{Ret} be \tcode{\exposid{deduced-vec-t}<V>}.
+Let \tcode{\placeholder{math-func}} denote the name of the function template.
+Let \tcode{\placeholder{math-func-vec}} denote:
+\begin{codeblock}
+Ret @\placeholder{math-func-vec}@(const @\exposid{deduced-vec-t}@<V>& a, const auto& b) {
+  return Ret([&](@\exposid{simd-size-type}@ i) {
+    return @\placeholder{math-func}@(a[i], b[i]);
+  });
+}
+\end{codeblock}
+
+\pnum
+\returns
+A value \tcode{ret} of type \tcode{Ret}, that is element-wise equal to the
+result of calling \tcode{\placeholder{math-func-vec}} with the parameters of the above
+functions.
+If in an invocation of a scalar overload of \tcode{\placeholder{math-func}} for index
+\tcode{i} in \tcode{\placeholder{math-func-vec}} a domain, pole, or range error would
+occur, the value of \tcode{ret[i]} is unspecified.
+
+\pnum
+\remarks
+It is unspecified whether \tcode{errno}\iref{errno} is accessed.
+\end{itemdescr}
+
+\indexlibrarymember{abs}{simd}
+\begin{itemdecl}
+template<@\libconcept{signed_integral}@ T, class Abi>
+  constexpr basic_vec<T, Abi> abs(const basic_vec<T, Abi>& j);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\expects
+\tcode{all_of(j >= -numeric_limits<T>::max())} is \tcode{true}.
+
+\pnum
+\returns
+An object where the $i^{\textrm{th}}$ element is initialized to the result of
+\tcode{std::abs(j[$i$])} for all $i$ in the range \range{0}{j.size()}.
+
+\end{itemdescr}
+
+\begin{itemdecl}
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{acos}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{asin}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{atan}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{atan2}{simd}@(const V& y, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> atan2(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> atan2(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{cos}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{sin}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{tan}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{acosh}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{asinh}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{atanh}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{cosh}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{sinh}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{tanh}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{exp}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{exp2}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{expm1}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{log}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{log10}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{log1p}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{log2}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{logb}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{cbrt}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{hypot}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> hypot(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const V& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> hypot(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> hypot(const V& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V>
+    hypot(const @\exposid{deduced-vec-t}@<V>& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V>
+    hypot(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V>
+    hypot(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const @\exposid{deduced-vec-t}@<V>& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{pow}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> pow(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> pow(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{sqrt}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{erf}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{erfc}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{lgamma}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> constexpr @\exposid{deduced-vec-t}@<V> @\libmember{tgamma}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> @\libmember{lerp}{simd}@(const V& a, const V& b, const V& t) noexcept;
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> lerp(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> lerp(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> lerp(const V& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V>
+    lerp(const @\exposid{deduced-vec-t}@<V>& x, const @\exposid{deduced-vec-t}@<V>& y, const V& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V>
+    lerp(const @\exposid{deduced-vec-t}@<V>& x, const V& y, const @\exposid{deduced-vec-t}@<V>& z);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V>
+    lerp(const V& x, const @\exposid{deduced-vec-t}@<V>& y, const @\exposid{deduced-vec-t}@<V>& z);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{beta}{simd}@(const V& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> beta(const @\exposid{deduced-vec-t}@<V>& x, const V& y);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> beta(const V& x, const @\exposid{deduced-vec-t}@<V>& y);
+template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> @\libmember{comp_ellint_1}{simd}@(const V& k);
+template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> @\libmember{comp_ellint_2}{simd}@(const V& k);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{comp_ellint_3}{simd}@(const V& k, const V& nu);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> comp_ellint_3(const @\exposid{deduced-vec-t}@<V>& k, const V& nu);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> comp_ellint_3(const V& k, const @\exposid{deduced-vec-t}@<V>& nu);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{cyl_bessel_i}{simd}@(const V& nu, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> cyl_bessel_i(const @\exposid{deduced-vec-t}@<V>& nu, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> cyl_bessel_i(const V& nu, const @\exposid{deduced-vec-t}@<V>& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{cyl_bessel_j}{simd}@(const V& nu, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> cyl_bessel_j(const @\exposid{deduced-vec-t}@<V>& nu, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> cyl_bessel_j(const V& nu, const @\exposid{deduced-vec-t}@<V>& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{cyl_bessel_k}{simd}@(const V& nu, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> cyl_bessel_k(const @\exposid{deduced-vec-t}@<V>& nu, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> cyl_bessel_k(const V& nu, const @\exposid{deduced-vec-t}@<V>& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{cyl_neumann}{simd}@(const V& nu, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> cyl_neumann(const @\exposid{deduced-vec-t}@<V>& nu, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> cyl_neumann(const V& nu, const @\exposid{deduced-vec-t}@<V>& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{ellint_1}{simd}@(const V& k, const V& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_1(const @\exposid{deduced-vec-t}@<V>& k, const V& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_1(const V& k, const @\exposid{deduced-vec-t}@<V>& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{ellint_2}{simd}@(const V& k, const V& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_2(const @\exposid{deduced-vec-t}@<V>& k, const V& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_2(const V& k, const @\exposid{deduced-vec-t}@<V>& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{ellint_3}{simd}@(const V& k, const V& nu, const V& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_3(const @\exposid{deduced-vec-t}@<V>& k, const V& nu, const V& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_3(const V& k, const @\exposid{deduced-vec-t}@<V>& nu, const V& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_3(const V& k, const V& nu, const @\exposid{deduced-vec-t}@<V>& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_3(const @\exposid{deduced-vec-t}@<V>& k, const @\exposid{deduced-vec-t}@<V>& nu, const V& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_3(const @\exposid{deduced-vec-t}@<V>& k, const V& nu, const @\exposid{deduced-vec-t}@<V>& phi);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> ellint_3(const V& k, const @\exposid{deduced-vec-t}@<V>& nu, const @\exposid{deduced-vec-t}@<V>& phi);
+template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> @\libmember{expint}{simd}@(const V& x);
+template<@\exposconcept{math-floating-point}@ V> @\exposid{deduced-vec-t}@<V> @\libmember{riemann_zeta}{simd}@(const V& x);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -19971,9 +20141,9 @@ template with the name \tcode{\placeholder{math-func}}.
 Let \tcode{\placeholder{math-func-vec}} denote:
 \begin{codeblock}
 template<class... Args>
-Ret @\placeholder{math-func-vec}@(Args... args) {
+Ret @\placeholder{math-func-vec}@(const Args&... args) {
   return Ret([&](@\exposid{simd-size-type}@ i) {
-    return @\placeholder{math-func}@(@\exposid{make-compatible-simd-t}@<Ret, Args>(args)[i]...);
+    return @\placeholder{math-func}(\exposid{deduced-vec-t}@<V>(args)[i]...);
   });
 }
 \end{codeblock}
@@ -19981,7 +20151,7 @@ Ret @\placeholder{math-func-vec}@(Args... args) {
 \pnum
 \returns
 A value \tcode{ret} of type \tcode{Ret}, that is element-wise approximately
-equal to the result of calling \tcode{\placeholder{math-func-vec}} with the arguments
+equal to the result of calling \tcode{\placeholder{math-func-vec}} with the parameters
 of the above functions.
 If in an invocation of a scalar overload of \tcode{\placeholder{math-func}} for index
 \tcode{i} in \tcode{\placeholder{math-func-vec}} a domain, pole, or range error would
@@ -19990,6 +20160,65 @@ occur, the value of \tcode{ret[i]} is unspecified.
 \pnum
 \remarks
 It is unspecified whether \tcode{errno}\iref{errno} is accessed.
+\end{itemdescr}
+
+\begin{itemdecl}
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{assoc_laguerre}{simd}@(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& n,
+                                 @\itcorr@ const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{assoc_legendre}{simd}@(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& l,
+                                 @\itcorr@ const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{sph_legendre}{simd}@(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& l,
+                               @\itcorr@ const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& m, const V& theta);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{\placeholder{math-func}} denote the name of the function template.
+Let \tcode{\placeholder{math-func-vec}} denote:
+\begin{codeblock}
+auto @\placeholder{math-func-vec}@(const auto& a, const auto& b, const @\exposid{deduced-vec-t}@<V>& c) {
+  return @\exposid{deduced-vec-t}@<V>([&](@\exposid{simd-size-type}@ i) {
+    return std::@\placeholder{math-func}@(a[i], b[i], c[i]);
+  });
+}
+\end{codeblock}
+
+\pnum
+\returns
+An object that is element-wise approximately equal to the result of calling
+\tcode{\placeholder{math-func-vec}} with the parameters of the above functions.
+\end{itemdescr}
+
+\begin{itemdecl}
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{hermite}{simd}@(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& n, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{laguerre}{simd}@(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& n, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{legendre}{simd}@(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& l, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{sph_bessel}{simd}@(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& n, const V& x);
+template<@\exposconcept{math-floating-point}@ V>
+  @\exposid{deduced-vec-t}@<V> @\libmember{sph_neumann}{simd}@(const rebind_t<unsigned, @\exposid{deduced-vec-t}@<V>>& n, const V& x);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{\placeholder{math-func}} denote the name of the function template.
+Let \tcode{\placeholder{math-func-vec}} denote:
+\begin{codeblock}
+auto @\placeholder{math-func-vec}@(const auto& a, const @\exposid{deduced-vec-t}@<V>& b) {
+  return @\exposid{deduced-vec-t}@<V>([&](@\exposid{simd-size-type}@ i) { return std::@\placeholder{math-func}@(a[i], b[i]); });
+}
+\end{codeblock}
+
+\pnum
+\returns
+An object that is element-wise approximately equal to the result of calling
+\tcode{\placeholder{math-func-vec}} with the parameters of the above functions.
 \end{itemdescr}
 
 \indexlibrarymember{frexp}{simd}
@@ -20004,10 +20233,10 @@ Let \tcode{Ret} be \tcode{\exposid{deduced-vec-t}<V>}.
 Let \tcode{\placeholder{frexp-vec}} denote:
 \begin{codeblock}
 template<class V>
-pair<Ret, rebind_t<int, Ret>> @\placeholder{frexp-vec}@(const V& x) {
+pair<Ret, rebind_t<int, Ret>> @\placeholder{frexp-vec}@(const @\exposid{deduced-vec-t}@<V>& x) {
   int r1[Ret::size()];
   Ret r0([&](@\exposid{simd-size-type}@ i) {
-    return frexp(@\exposid{make-compatible-simd-t}@<Ret, V>(x)[i], &r1[i]);
+    return frexp(x[i], &r1[i]);
   });
   return {r0, rebind_t<int, Ret>(r1)};
 }
@@ -20027,27 +20256,29 @@ Sets \tcode{*exp} to \tcode{ret.second}.
 
 \indexlibrarymember{remquo}{simd}
 \begin{itemdecl}
-template<class V0, class V1>
-  constexpr @\exposid{math-common-simd-t}@<V0, V1> remquo(const V0& x, const V1& y,
-                                              rebind_t<int, @\exposid{math-common-simd-t}@<V0, V1>>* quo);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V> remquo(const V& x, const V& y,
+                          rebind_t<int, @\exposid{deduced-vec-t}@<V>>* quo);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V>
+    remquo(const @\exposid{deduced-vec-t}@<V>& x, const V& y, rebind_t<int, @\exposid{deduced-vec-t}@<V>>* quo);
+template<@\exposconcept{math-floating-point}@ V>
+  constexpr @\exposid{deduced-vec-t}@<V>
+    remquo(const V& x, const @\exposid{deduced-vec-t}@<V>& y, rebind_t<int, @\exposid{deduced-vec-t}@<V>>* quo);
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
-Let \tcode{Ret} be \tcode{\exposid{math-common-simd-t}<V0, V1>}.
+Let \tcode{V0} be \tcode{\exposid{deduced-vec-t}<V>}.
 Let \tcode{\placeholder{remquo-vec}} denote:
 \begin{codeblock}
-template<class V0, class V1>
-pair<Ret, rebind_t<int, Ret>> @\placeholder{remquo-vec}@(const V0& x, const V1& y) {
-  int r1[Ret::size()];
-  Ret r0([&](@\exposid{simd-size-type}@ i) {
-    return remquo(@\exposid{make-compatible-simd-t}@<Ret, V0>(x)[i],
-                  @\exposid{make-compatible-simd-t}@<Ret, V1>(y)[i], &r1[i]);
-  });
-  return {r0, rebind_t<int, Ret>(r1)};
+pair<V0, rebind_t<int, V0>> @\placeholder{remquo-vec}@(const V0& x, const V0& y) {
+  int r1[V0::size()];
+  V0 r0([&](@\exposid{simd-size-type}@ i) { return remquo(x[i], y[i], &r1[i]); });
+  return {r0, rebind_t<int, V0>(r1)};
 }
 \end{codeblock}
-Let \tcode{ret} be a value of type \tcode{pair<Ret, rebind_t<int, Ret>>}
+Let \tcode{ret} be a value of type \tcode{pair<V0, rebind_t<int, V0>>}
 that is the same value as the result of calling
 \tcode{\placeholder{remquo-vec}(x, y)}.
 If in an invocation of a scalar overload of \tcode{remquo} for index \tcode{i}
@@ -20080,7 +20311,7 @@ Let \tcode{V} be \tcode{basic_vec<T, Abi>}.
 Let \tcode{\placeholder{modf-vec}} denote:
 \begin{codeblock}
 pair<V, V> @\placeholder{modf-vec}@(const V& x) {
-  T r1[Ret::size()];
+  T r1[V::size()];
   V r0([&](@\exposid{simd-size-type}@ i) {
     return modf(V(x)[i], &r1[i]);
   });
@@ -20118,6 +20349,23 @@ the result of \tcode{std::byteswap(v[$i$])} for all $i$ in the range
 \range{0}{V::size()}.
 \end{itemdescr}
 
+\indexlibrarymember{bit_reverse}{simd}
+\begin{itemdecl}
+template<@\exposconcept{simd-integral}@ V> constexpr V bit_reverse(const V& v) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+The type \tcode{V::value_type} is an unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
+the result of \tcode{std::bit_reverse(\brk{}v[$i$])} for all $i$ in the range
+\range{0}{V::size()}.
+\end{itemdescr}
+
 \indexlibrarymember{bit_ceil}{simd}
 \begin{itemdecl}
 template<@\exposconcept{simd-vec-type}@ V> constexpr V bit_ceil(const V& v);
@@ -20143,7 +20391,7 @@ the result of \tcode{std::bit_ceil(v[$i$])} for all $i$ in the range
 \pnum
 \remarks
 A function call expression that violates the precondition in the \expects
-element is not a core constant expression\iref{expr.const}.
+element is not a core constant expression\iref{expr.const.core}.
 \end{itemdescr}
 
 \indexlibrarymember{bit_floor}{simd}
@@ -20181,13 +20429,70 @@ to the result of \tcode{std::has_single_bit(v[$i$])} for all $i$ in the range
 \range{0}{V::size()}.
 \end{itemdescr}
 
+\indexlibrarymember{shl}{simd}
+\indexlibrarymember{shr}{simd}
+\begin{itemdecl}
+template<@\exposconcept{simd-integral}@ VX, @\exposconcept{simd-integral}@ VS>
+  constexpr VX shl(const VX& x, const VS& s) noexcept;
+template<@\exposconcept{simd-integral}@ VX, @\exposconcept{simd-integral}@ VS>
+  constexpr VX shr(const VX& x, const VS& s) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+\begin{itemize}
+\item
+Each of \tcode{VX::value_type} and \tcode{VS::value_type}
+is a signed or unsigned integer type\iref{basic.fundamental},
+\item
+\tcode{VX::size() == VS::size()} is \tcode{true}, and
+\item
+\tcode{sizeof(typename VX::value_type) == sizeof(typename VS::value_type)}
+is \tcode{true}.
+\end{itemize}
+
+\pnum
+\returns
+A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
+the result of \tcode{\placeholder{bit-func}(x[$i$], s[$i$])}
+for all $i$ in the range \range{0}{VX::size()},
+where \tcode{\placeholder{bit-func}} is the corresponding scalar function from \libheader{bit}.
+\end{itemdescr}
+
+\indexlibrarymember{shl}{simd}
+\indexlibrarymember{shr}{simd}
+\begin{itemdecl}
+template<@\exposconcept{simd-integral}@ V, class S>
+  constexpr V shl(const V& x, S s) noexcept;
+template<@\exposconcept{simd-integral}@ V, class S>
+  constexpr V shr(const V& x, S s) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+Each of \tcode{VX::value_type} and \tcode{S}
+is a signed or unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
+the result of \tcode{\placeholder{bit-func}(x[$i$], s)}
+for all $i$ in the range \range{0}{VX::size()},
+where \tcode{\placeholder{bit-func}} is the corresponding scalar function from \libheader{bit}.
+\end{itemdescr}
+
 \indexlibrarymember{rotl}{simd}
 \indexlibrarymember{rotr}{simd}
+\indexlibrarymember{bit_repeat}{simd}
 \begin{itemdecl}
 template<@\exposconcept{simd-vec-type}@ V0, @\exposconcept{simd-vec-type}@ V1>
   constexpr V0 rotl(const V0& v0, const V1& v1) noexcept;
 template<@\exposconcept{simd-vec-type}@ V0, @\exposconcept{simd-vec-type}@ V1>
   constexpr V0 rotr(const V0& v0, const V1& v1) noexcept;
+template<@\exposconcept{simd-integral}@ V0, @\exposconcept{simd-integral}@ V1>
+  constexpr V0 bit_repeat(const V0& v0, const V1& v1);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -20205,18 +20510,31 @@ template<@\exposconcept{simd-vec-type}@ V0, @\exposconcept{simd-vec-type}@ V1>
 \end{itemize}
 
 \pnum
+\expects
+For \tcode{bit_repeat},
+\tcode{v1[$i$] > 0} is \tcode{true}
+for all $i$ in the range \range{0}{V0::size()}.
+
+\pnum
 \returns
 A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
 the result of \tcode{\placeholder{bit-func}(v0[$i$],
 static_cast<int>(v1[$i$]))} for all $i$ in the range \range{0}{V0::size()},
 where \tcode{\placeholder{bit-func}} is the corresponding scalar function from \libheader{bit}.
+
+\pnum
+\remarks
+A function call expression that violates the precondition in the \expects
+element is not a core constant expression\iref{expr.const.core}.
 \end{itemdescr}
 
 \indexlibrarymember{rotl}{simd}
 \indexlibrarymember{rotr}{simd}
+\indexlibrarymember{bit_repeat}{simd}
 \begin{itemdecl}
 template<@\exposconcept{simd-vec-type}@ V> constexpr V rotl(const V& v, int s) noexcept;
 template<@\exposconcept{simd-vec-type}@ V> constexpr V rotr(const V& v, int s) noexcept;
+template<@\exposconcept{simd-integral}@ V> constexpr V bit_repeat(const V& v, int l);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -20225,11 +20543,21 @@ template<@\exposconcept{simd-vec-type}@ V> constexpr V rotr(const V& v, int s) n
 The type \tcode{V::value_type} is an unsigned integer type\iref{basic.fundamental}.
 
 \pnum
+\expects
+For \tcode{bit_repeat},
+\tcode{l > 0} is \tcode{true}.
+
+\pnum
 \returns
 A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
 the result of \tcode{\placeholder{bit-func}(v[$i$], s)} for all $i$ in the
 range \range{0}{V::size()}, where \tcode{\placeholder{bit-func}} is the corresponding
 scalar function from \libheader{bit}.
+
+\pnum
+\remarks
+A function call expression that violates the precondition in the \expects
+element is not a core constant expression\iref{expr.const.core}.
 \end{itemdescr}
 
 \indexlibrarymember{bit_width}{simd}
@@ -20264,6 +20592,52 @@ A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
 the result of \tcode{\placeholder{bit-func}(v[$i$])} for all $i$ in the range
 \range{0}{V::size()}, where \tcode{\placeholder{bit-func}} is the corresponding scalar
 function from \libheader{bit}.
+\end{itemdescr}
+
+\indexlibrarymember{bit_compress}{simd}
+\indexlibrarymember{bit_expand}{simd}
+\begin{itemdecl}
+template<@\exposconcept{simd-integral}@ V>
+  constexpr V bit_compress(const V& v, const V& m) noexcept;
+template<@\exposconcept{simd-integral}@ V>
+  constexpr V bit_expand(const V& v, const V& m) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+The type \tcode{V::value_type} is an unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
+the result of \tcode{\placeholder{bit-func}(v[$i$], m[$i$])}
+for all $i$ in the range \range{0}{V::size()},
+where \tcode{\placeholder{bit-func}} is the corresponding
+scalar function from \libheader{bit}.
+\end{itemdescr}
+
+\indexlibrarymember{bit_compress}{simd}
+\indexlibrarymember{bit_expand}{simd}
+\begin{itemdecl}
+template<@\exposconcept{simd-integral}@ V>
+  constexpr V bit_compress(const V& v, typename V::value_type m) noexcept;
+template<@\exposconcept{simd-integral}@ V>
+  constexpr V bit_expand(const V& v, typename V::value_type m) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+The type \tcode{V::value_type} is an unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+A \tcode{basic_vec} object where the $i^\text{th}$ element is initialized to
+the result of \tcode{\placeholder{bit-func}(v[$i$], m)}
+for all $i$ in the range \range{0}{V::size()},
+where \tcode{\placeholder{bit-func}} is the corresponding
+scalar function from \libheader{bit}.
 \end{itemdescr}
 
 \rSec3[simd.complex.math]{Complex math}
@@ -20383,8 +20757,7 @@ namespace std::simd {
     constexpr default_sentinel_t @\libmember{end}{basic_mask}@() const noexcept { return {}; }
     constexpr default_sentinel_t @\libmember{cend}{basic_mask}@() const noexcept { return {}; }
 
-    static constexpr integral_constant<@\exposid{simd-size-type}@, @\exposid{simd-size-v}@<@\exposid{integer-from}@<Bytes>, Abi>>
-      @\libmember{size}{basic_mask}@ {};
+    static constexpr integral_constant<@\exposid{simd-size-type}@, @\exposid{mask-size-v}@<Bytes, Abi>> @\libmember{size}{basic_mask}@ {};
 
     constexpr basic_mask() noexcept = default;
 
@@ -20472,9 +20845,9 @@ The specialization of \tcode{basic_mask<Bytes, Abi>} is:
    is equal to \tcode{sizeof(T)},
  \item
    otherwise, enabled, if there exists a vectorizable type \tcode{T} and a
-   value \tcode{N} in the range \crange{1}{64} such that \tcode{Bytes} is equal
-   to \tcode{sizeof(T)} and \tcode{Abi} is \tcode{\exposid{deduce-abi-t}<T,
-   N>},
+   value \tcode{N} in the range \crange{1}{64}
+   such that \tcode{Bytes} is equal to \tcode{sizeof(T)} and
+   \tcode{Abi} names the ABI tag denoted by \tcode{\exposid{decude-abi-t}<T, N>},
  \item
    otherwise, it is \impldef{set of enabled \tcode{basic_mask<Bytes, Abi>}
    specializations} if such a specialization is enabled.
@@ -20490,7 +20863,8 @@ If \tcode{basic_mask<Bytes, Abi>} is enabled,
 \tcode{basic_mask<Bytes, Abi>} is trivially copyable.
 
 \pnum
-\recommended Implementations should support implicit conversions between
+\recommended
+Implementations should support implicit conversions between
 specializations of \tcode{basic_mask} and appropriate \impldef{conversions
 of \tcode{basic_mask} from/to implementation-specific vector types} types.
 \begin{note}
@@ -20617,10 +20991,10 @@ Equivalent to: \tcode{return permute(*this, indices);}
 
 \rSec3[simd.mask.unary]{Unary operators}
 
-\indexlibrarymember{operator!}{basic_mask}
+\indexlibrarymember{operator"!}{basic_mask}
 \indexlibrarymember{operator+}{basic_mask}
 \indexlibrarymember{operator-}{basic_mask}
-\indexlibrarymember{operator~}{basic_mask}
+\indexlibrarymember{operator\~{}}{basic_mask}
 \begin{itemdecl}
 constexpr basic_mask operator!() const noexcept;
 constexpr @\seebelow@ operator+() const noexcept;
@@ -20711,9 +21085,9 @@ Nothing.
 \rSec3[simd.mask.binary]{Binary operators}
 
 \indexlibrarymember{operator\&\&}{basic_mask}
-\indexlibrarymember{operator||}{basic_mask}
+\indexlibrarymember{operator"|"|}{basic_mask}
 \indexlibrarymember{operator\&}{basic_mask}
-\indexlibrarymember{operator|}{basic_mask}
+\indexlibrarymember{operator"|}{basic_mask}
 \indexlibrarymember{operator\caret}{basic_mask}
 \begin{itemdecl}
 friend constexpr basic_mask
@@ -20742,7 +21116,7 @@ operation.
 \rSec3[simd.mask.cassign]{Compound assignment}
 
 \indexlibrarymember{operator\&=}{basic_mask}
-\indexlibrarymember{operator|=}{basic_mask}
+\indexlibrarymember{operator"|=}{basic_mask}
 \indexlibrarymember{operator\caret=}{basic_mask}
 \begin{itemdecl}
 friend constexpr basic_mask&
@@ -20770,7 +21144,7 @@ binary element-wise operation.
 \rSec3[simd.mask.comparison]{Comparisons}
 
 \indexlibrarymember{operator==}{basic_mask}
-\indexlibrarymember{operator!=}{basic_mask}
+\indexlibrarymember{operator"!=}{basic_mask}
 \indexlibrarymember{operator>=}{basic_mask}
 \indexlibrarymember{operator<=}{basic_mask}
 \indexlibrarymember{operator<}{basic_mask}

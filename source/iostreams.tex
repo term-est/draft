@@ -363,17 +363,19 @@ class template specialization
 serves as a base class for class templates
 \tcode{basic_stringbuf},
 \tcode{basic_filebuf},
+\tcode{basic_syncbuf},
 and
-\tcode{basic_syncbuf}.
+\tcode{basic_spanbuf}.
 
 \pnum
 The
 class template specialization
 \tcode{basic_istream<charT, traits>}
 serves as a base class for class templates
-\tcode{basic_istringstream}
+\tcode{basic_istringstream},
+\tcode{basic_ifstream},
 and
-\tcode{basic_ifstream}.
+\tcode{basic_ispanstream}.
 
 \pnum
 The
@@ -382,17 +384,19 @@ class template specialization
 serves as a base class for class templates
 \tcode{basic_ostringstream},
 \tcode{basic_ofstream},
+\tcode{basic_osyncstream},
 and
-\tcode{basic_osyncstream}.
+\tcode{basic_ospanstream}.
 
 \pnum
 The
 class template specialization
 \tcode{basic_iostream<charT, traits>}
 serves as a base class for class templates
-\tcode{basic_stringstream}
+\tcode{basic_stringstream},
+\tcode{basic_fstream},
 and
-\tcode{basic_fstream}.
+\tcode{basic_spanstream}.
 
 \pnum
 \begin{note}
@@ -404,9 +408,8 @@ is not the same type as
 \end{note}
 
 \pnum
-Other \grammarterm{typedef-name}{s} define instances of
-class templates
-specialized for
+Other \grammarterm{typedef-name}{s} designate
+class template specializations for
 \tcode{char}
 or
 \keyword{wchar_t}
@@ -4384,17 +4387,9 @@ namespace std {
   // \ref{istream.extractors}, character extraction templates
   template<class charT, class traits>
     basic_istream<charT, traits>& operator>>(basic_istream<charT, traits>&, charT&);
-  template<class traits>
-    basic_istream<char, traits>& operator>>(basic_istream<char, traits>&, unsigned char&);
-  template<class traits>
-    basic_istream<char, traits>& operator>>(basic_istream<char, traits>&, signed char&);
 
   template<class charT, class traits, size_t N>
     basic_istream<charT, traits>& operator>>(basic_istream<charT, traits>&, charT(&)[N]);
-  template<class traits, size_t N>
-    basic_istream<char, traits>& operator>>(basic_istream<char, traits>&, unsigned char(&)[N]);
-  template<class traits, size_t N>
-    basic_istream<char, traits>& operator>>(basic_istream<char, traits>&, signed char(&)[N]);
 }
 \end{codeblock}
 
@@ -4763,7 +4758,7 @@ if (lval < numeric_limits<short>::min()) {
 } else if (numeric_limits<short>::max() < lval) {
   state |= ios_base::failbit;
   val = numeric_limits<short>::max();
-}  else
+} else
   val = static_cast<short>(lval);
 \end{codeblock}
 \end{itemdescr}
@@ -4787,7 +4782,7 @@ if (lval < numeric_limits<int>::min()) {
 } else if (numeric_limits<int>::max() < lval) {
   state |= ios_base::failbit;
   val = numeric_limits<int>::max();
-}  else
+} else
   val = static_cast<int>(lval);
 \end{codeblock}
 \end{itemdescr}
@@ -4916,10 +4911,6 @@ This extractor does not behave as a formatted input function
 \begin{itemdecl}
 template<class charT, class traits, size_t N>
   basic_istream<charT, traits>& operator>>(basic_istream<charT, traits>& in, charT (&s)[N]);
-template<class traits, size_t N>
-  basic_istream<char, traits>& operator>>(basic_istream<char, traits>& in, unsigned char (&s)[N]);
-template<class traits, size_t N>
-  basic_istream<char, traits>& operator>>(basic_istream<char, traits>& in, signed char (&s)[N]);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -4973,10 +4964,6 @@ before \tcode{setstate} is called.
 \begin{itemdecl}
 template<class charT, class traits>
   basic_istream<charT, traits>& operator>>(basic_istream<charT, traits>& in, charT& c);
-template<class traits>
-  basic_istream<char, traits>& operator>>(basic_istream<char, traits>& in, unsigned char& c);
-template<class traits>
-  basic_istream<char, traits>& operator>>(basic_istream<char, traits>& in, signed char& c);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -5651,7 +5638,7 @@ and, if that function returns \tcode{-1}
 calls
 \tcode{setstate(badbit)}
 (which may throw
-\tcode{ios_base::failure}\iref{iostate.flags},
+\tcode{ios_base::failure}\iref{iostate.flags}),
 and returns
 \tcode{-1}.
 Otherwise, returns zero.
@@ -6001,11 +5988,6 @@ namespace std {
     basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, char);
 
   template<class traits>
-    basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, signed char);
-  template<class traits>
-    basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, unsigned char);
-
-  template<class traits>
     basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, wchar_t) = delete;
   template<class traits>
     basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, char8_t) = delete;
@@ -6029,11 +6011,6 @@ namespace std {
     basic_ostream<charT, traits>& operator<<(basic_ostream<charT, traits>&, const char*);
   template<class traits>
     basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, const char*);
-
-  template<class traits>
-    basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, const signed char*);
-  template<class traits>
-    basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, const unsigned char*);
 
   template<class traits>
     basic_ostream<char, traits>&
@@ -6716,11 +6693,6 @@ template<class charT, class traits>
 // specialization
 template<class traits>
   basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>& out, char c);
-// signed and unsigned
-template<class traits>
-  basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>& out, signed char c);
-template<class traits>
-  basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>& out, unsigned char c);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -6752,11 +6724,6 @@ template<class charT, class traits>
   basic_ostream<charT, traits>& operator<<(basic_ostream<charT, traits>& out, const char* s);
 template<class traits>
   basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>& out, const char* s);
-template<class traits>
-  basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>& out, const signed char* s);
-template<class traits>
-  basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>& out,
-                                          const unsigned char* s);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -6787,10 +6754,7 @@ and the second is of type
 for the overload where the first argument is of type
 \tcode{basic_ostream<charT, traits>\&}
 and the second is of type
-\tcode{const char*},
-\item
-\tcode{traits::length(reinterpret_cast<const char*>(s))}
-for the other two overloads.
+\tcode{const char*}.
 \end{itemize}
 Determines padding for \tcode{seq} as described
 in~\ref{ostream.formatted.reqmts}. Inserts \tcode{seq} into
@@ -7798,7 +7762,7 @@ template<class... Args>
 \effects
 Equivalent to:
 \begin{codeblock}
-print(stream, runtime_format(string(fmt.get()) + '\n'), std::forward<Args>(args)...);
+print(stream, dynamic_format(string(fmt.get()) + '\n'), std::forward<Args>(args)...);
 \end{codeblock}
 \end{itemdescr}
 
@@ -7924,7 +7888,7 @@ void vprint_nonunicode_buffered(FILE* stream, string_view fmt, format_args args)
 Equivalent to:
 \begin{codeblock}
 string out = vformat(fmt, args);
-vprint_nonunicode("{}", make_format_args(out));
+vprint_nonunicode(stream, "{}", make_format_args(out));
 \end{codeblock}
 \end{itemdescr}
 
@@ -13714,7 +13678,7 @@ namespace std::filesystem {
       basic_string<EcharT, traits, Allocator>
         string(const Allocator& a = Allocator()) const;
     std::string    display_string() const;
-    std::string    system_encoded_string() const;
+    std::string    native_encoded_string() const;
     std::wstring   wstring() const;
     std::u8string  u8string() const;
     std::u16string u16string() const;
@@ -13726,7 +13690,7 @@ namespace std::filesystem {
       basic_string<EcharT, traits, Allocator>
         generic_string(const Allocator& a = Allocator()) const;
     std::string    generic_display_string() const;
-    std::string    generic_system_encoded_string() const;
+    std::string    generic_native_encoded_string() const;
     std::wstring   generic_wstring() const;
     std::u8string  generic_u8string() const;
     std::u16string generic_u16string() const;
@@ -13786,7 +13750,7 @@ namespace std::filesystem {
 
 \indexlibrarymember{value_type}{path}%
 \pnum
-\tcode{value_type} is a \keyword{typedef} for the
+\tcode{value_type} is a \grammarterm{typedef-name} for the
 operating system dependent encoded character type used to represent pathnames.
 
 \indexlibrarymember{preferred_separator}{path}%
@@ -14048,7 +14012,8 @@ For POSIX-based operating systems \tcode{path::value_type} is \tcode{char}
 so no conversion from \tcode{char} value type arguments or to \tcode{char}
 value type return values is performed.
 For Windows-based operating systems, the
-native ordinary encoding is determined by calling a Windows API function.
+native ordinary encoding is determined by
+the current locale encoding and the Windows \tcode{AreFileApisANSI} function.
 \end{note}
 \begin{note}
 This results in behavior identical to other C and \Cpp{}
@@ -14695,13 +14660,13 @@ be performed by \tcode{a}. Conversion, if any, is specified by
 \ref{fs.path.cvt}.
 \end{itemdescr}
 
-\indexlibrarymember{system_encoded_string}{path}%
+\indexlibrarymember{native_encoded_string}{path}%
 \indexlibrarymember{wstring}{path}%
 \indexlibrarymember{u8string}{path}%
 \indexlibrarymember{u16string}{path}%
 \indexlibrarymember{u32string}{path}%
 \begin{itemdecl}
-std::string system_encoded_string() const;
+std::string native_encoded_string() const;
 std::wstring wstring() const;
 std::u8string u8string() const;
 std::u16string u16string() const;
@@ -14770,13 +14735,13 @@ be performed by \tcode{a}. Conversion, if any, is specified by
 \ref{fs.path.cvt}.
 \end{itemdescr}
 
-\indexlibrarymember{generic_system_encoded_string}{path}%
+\indexlibrarymember{generic_native_encoded_string}{path}%
 \indexlibrarymember{generic_wstring}{path}%
 \indexlibrarymember{generic_u8string}{path}%
 \indexlibrarymember{generic_u16string}{path}%
 \indexlibrarymember{generic_u32string}{path}%
 \begin{itemdecl}
-std::string generic_system_encoded_string() const;
+std::string generic_native_encoded_string() const;
 std::wstring generic_wstring() const;
 std::u8string generic_u8string() const;
 std::u16string generic_u16string() const;
@@ -18992,6 +18957,15 @@ that delivers data
 to the host environment
 to be written to a file (\xrefc{7.23.3})
 is an observable checkpoint\iref{intro.abstract}.
+
+\pnum
+When the input item for the \tcode{\%p} conversion
+of the \tcode{fscanf} function (or equivalent)
+is one that can be produced
+from more than one pointer value\iref{basic.compound},
+the pointer that results is an unspecified choice among all those values
+that would result in the program having defined behavior.
+If no such value exists, the behavior is undefined.
 
 \pnum
 Calls to the function \tcode{tmpnam} with an argument that is a null pointer value may

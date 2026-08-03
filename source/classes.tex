@@ -580,6 +580,10 @@ and each such \grammarterm{member-declaration}
 shall either
 declare at least one member name of the class
 or declare at least one unnamed bit-field.
+A \defnx{user-declared}{entity!user-declared}
+\indextext{user-declared entity|see{entity, user-declared}}
+entity is a direct member or a friend that, in either case,
+is declared by a \grammarterm{member-declaration}.
 
 \pnum
 A \defn{data member} is either a non-function member introduced by a
@@ -717,7 +721,7 @@ specifies a \defn{default member initializer} for the member, and
 shall not directly or indirectly cause the implicit definition of a
 defaulted default constructor for the enclosing class or the
 exception specification of that constructor.
-An immediate invocation\iref{expr.const} that
+An immediate invocation\iref{expr.const.imm} that
 is a potentially-evaluated subexpression\iref{intro.execution}
 of a default member initializer
 is neither evaluated nor checked for whether it
@@ -928,18 +932,24 @@ pointer-interconvertible\iref{basic.compound,expr.static.cast}.
 
 \pnum
 A \defnadj{data member}{description} is
-a quintuple ($T$, $N$, $A$, $W$, $\mathit{NUA}$)
+a sextuple ($T$, $N$, $A$, $W$, $\mathit{NUA}$, $\mathit{ANN}$)
 describing the potential declaration of a non-static data member where
 \begin{itemize}
 \item $T$ is a type,
 \item $N$ is an \grammarterm{identifier} or $\bot$,
 \item $A$ is an alignment or $\bot$,
-\item $W$ is a bit-field width or $\bot$, and
-\item $\mathit{NUA}$ is a boolean value.
+\item $W$ is a bit-field width or $\bot$,
+\item $\mathit{NUA}$ is a boolean value, and
+\item $\mathit{ANN}$ is a sequence of reflections
+representing either values or template parameter objects.
 \end{itemize}
 Two data member descriptions are equal
-if each of their respective components are the same entities,
-are the same identifiers, have equal values, or are both $\bot$.
+if each of their respective components are
+the same entity,
+the same identifier,
+the same value,
+the same sequence, or
+both $\bot$.
 \begin{note}
 The components of a data member description describe a data member such that
 \begin{itemize}
@@ -1273,8 +1283,9 @@ that is not a function parameter pack
 has a default argument
 (including the case of a constructor with no parameters).
 \indextext{implicitly-declared default constructor}%
-If there is no user-declared constructor or constructor template for class
-\tcode{X},
+If a class does not have
+a user-declared constructor or constructor template,
+and the class is not an anonymous union,
 a non-explicit constructor having no parameters is implicitly declared
 as defaulted\iref{dcl.fct.def}.
 An implicitly-declared default constructor is an
@@ -1332,26 +1343,14 @@ Otherwise, the default constructor is
 \defnx{non-trivial}{constructor!default!non-trivial}.
 
 \pnum
-If a default constructor of a union-like class \tcode{X} is trivial,
-then for each union \tcode{U}
-that is either \tcode{X} or an anonymous union member of \tcode{X},
-if the first variant member, if any, of \tcode{U}
-has implicit-lifetime type\iref{basic.types.general},
-the default constructor of \tcode{X} begins the lifetime of that member
-if it is not the active member of its union.
-\begin{note}
-It is already the active member if \tcode{U} was value-initialized.
-\end{note}
-Otherwise,
-an implicitly-defined\iref{dcl.fct.def.default} default constructor performs the set of
+An implicitly-defined\iref{dcl.fct.def.default} default constructor performs the set of
 initializations of the class that would be performed by a user-written default
 constructor for that class with no
 \grammarterm{ctor-initializer}\iref{class.base.init} and an empty
 \grammarterm{compound-statement}.
 If that user-written default constructor would be ill-formed,
 the program is ill-formed.
-The implicitly-defined
-default constructor is \keyword{constexpr}.
+The implicitly-defined default constructor is constexpr.
 Before the defaulted default constructor for a class is
 implicitly defined,
 all the non-user-provided default constructors for its base classes and
@@ -1503,7 +1502,8 @@ void h() {
 \end{example}
 
 \pnum
-If the class definition does not explicitly declare a copy constructor,
+If the class does not have a user-declared copy constructor
+and the class is not an anonymous union,
 a non-explicit one is declared \defnx{implicitly}{constructor!copy!implicitly declared}.
 If the class definition declares a move
 constructor or move assignment operator, the implicitly declared copy
@@ -1543,10 +1543,13 @@ X::X(X&)
 
 \pnum
 \indextext{constructor!move!implicitly declared}%
-If the definition of a class \tcode{X} does not explicitly declare
-a move constructor, a non-explicit one will be
+If a class \tcode{X} does not have
+a user-declared move constructor, a non-explicit one will be
 implicitly declared as defaulted if and only if
 \begin{itemize}
+\item
+\tcode{X} is not an anonymous union,
+
 \item
 \tcode{X} does not have a user-declared copy constructor,
 
@@ -1602,6 +1605,17 @@ an rvalue which can use the copy constructor instead.
 \end{note}
 
 \pnum
+\begin{note}
+A using-declaration in a derived class \tcode{C} that
+names a constructor from a base class
+never suppresses the implicit declaration of
+a copy/move constructor of \tcode{C},
+even if the base class constructor would be
+a copy or move constructor
+if declared as a member of \tcode{C}.
+\end{note}
+
+\pnum
 \indextext{constructor!copy!trivial}%
 \indextext{constructor!move!trivial}%
 A copy/move constructor for class
@@ -1636,8 +1650,7 @@ otherwise the copy/move constructor is
 The copy/move constructor is implicitly defined even if the implementation elided
 its odr-use\iref{term.odr.use,class.temporary}.
 \end{note}
-The implicitly-defined\iref{dcl.fct.def.default}
-constructor is \keyword{constexpr}.
+The implicitly-defined\iref{dcl.fct.def.default} constructor is constexpr.
 
 \pnum
 Before the defaulted copy/move constructor for a class is
@@ -1742,9 +1755,10 @@ void f() {
 \end{note}
 
 \pnum
-If the class definition does not explicitly declare a copy assignment operator,
+If the class does not have a user-declared copy assignment operator
+and the class is not an anonymous union,
 one is declared \defnx{implicitly}{assignment operator!copy!implicitly declared}.
-If the class definition declares a move
+If the class has a user-declared move
 constructor or move assignment operator, the implicitly declared copy
 assignment operator is defined as deleted; otherwise, it is
 defaulted\iref{dcl.fct.def}.
@@ -1796,6 +1810,9 @@ If the definition of a class \tcode{X} does not explicitly declare a
 move assignment operator, one
 will be implicitly declared as defaulted if and only if
 \begin{itemize}
+\item
+\tcode{X} is not an anonymous union,
+
 \item
 \tcode{X} does not have a user-declared copy constructor,
 
@@ -1913,7 +1930,7 @@ otherwise the copy/move assignment operator is
 \defnx{non-trivial}{assignment operator!copy!non-trivial}.
 
 \pnum
-An implicitly-defined\iref{dcl.fct.def.default} copy/move assignment operator is \keyword{constexpr}.
+An implicitly-defined\iref{dcl.fct.def.default} copy/move assignment operator is constexpr.
 
 \pnum
 Before the defaulted copy/move assignment operator for a class is
@@ -2030,7 +2047,8 @@ shall be
 \indextext{generated destructor|see{destructor, default}}%
 \indextext{destructor!default}%
 If a class has no user-declared
-prospective destructor,
+prospective destructor
+and the class is not an anonymous union,
 a prospective destructor is implicitly
 declared as defaulted\iref{dcl.fct.def}.
 An implicitly-declared prospective destructor is an
@@ -2043,7 +2061,8 @@ An implicitly-declared prospective destructor for a class \tcode{X} will have th
 \end{codeblock}
 
 \pnum
-At the end of the definition of a class,
+At the end of the definition of a class
+other than an anonymous union,
 overload resolution is performed
 among the prospective destructors declared in that class
 with an empty argument list
@@ -2316,7 +2335,7 @@ void g() {                      // rare, specialized use:
 
 \pnum
 Once a destructor is invoked for an object, the object's lifetime ends;
-the behavior is undefined if the destructor is invoked
+the behavior is undefined\ubdef{class.dtor.no.longer.exists} if the destructor is invoked
 for an object whose lifetime has ended\iref{basic.life}.
 \begin{example}
 If the destructor for an object with automatic storage duration is explicitly invoked,
@@ -2750,7 +2769,7 @@ of integral or enumeration type,
 its declaration in the class definition can specify a
 \grammarterm{brace-or-equal-initializer} in which every
 \grammarterm{initializer-clause} that is an \grammarterm{assignment-expression}
-is a constant expression\iref{expr.const}.
+is a constant expression\iref{expr.const.const}.
 The member shall still be defined in a namespace scope if
 it is odr-used\iref{term.odr.use} in the program and the
 namespace scope definition shall not contain an \grammarterm{initializer}.
@@ -3266,13 +3285,16 @@ an unnamed object of that type called
 an \defnx{anonymous union member}{member!anonymous union}
 if it is a non-static data member or
 an \defnx{anonymous union variable}{variable!anonymous union} otherwise.
+Each object of such an unnamed type shall be such an unnamed object.
 \indextext{access control!anonymous \tcode{union}}%
 \indextext{restriction!anonymous \tcode{union}}%
 Each \grammarterm{member-declaration} in the \grammarterm{member-specification}
 of an anonymous union shall define one or more public non-static data members,
 be an \grammarterm{empty-declaration}, or
 be a \grammarterm{static_assert-declaration}.
-Nested types, anonymous unions, and functions
+Nested types
+(including closure types\iref{expr.prim.lambda.closure} and anonymous unions)
+and functions
 shall not be declared within an anonymous union.
 The names of the members of an anonymous union
 are bound in the scope inhabited by the union declaration.
@@ -3984,7 +4006,7 @@ another class.
 \indextext{definition!virtual function}%
 A virtual function declared in a class shall be defined, or declared
 pure\iref{class.abstract} in that class, or both; no diagnostic is
-required\iref{basic.def.odr}.
+required\iref{basic.def.odr}\ifndrdef{class.virtual.pure.or.defined}.
 \indextext{friend!\tcode{virtual} and}%
 
 \pnum
@@ -4099,11 +4121,9 @@ deleted function.%
 \indextext{function!virtual|)}
 
 \pnum
-A class with a \keyword{consteval} virtual function that overrides
-a virtual function that is not \keyword{consteval}
-shall have consteval-only type\iref{basic.types.general}.
-A \keyword{consteval} virtual function shall not be overridden by
-a virtual function that is not \keyword{consteval}.
+A non-immediate virtual function shall not be overridden by an immediate virtual function.
+An immediate virtual function shall not be overridden by
+a non-immediate virtual function.
 
 \rSec2[class.abstract]{Abstract classes}%
 
@@ -4218,7 +4238,7 @@ abstract class;
 \indextext{virtual function call!undefined pure}%
 the effect of making a virtual call\iref{class.virtual} to a pure
 virtual function directly or indirectly for the object being created (or
-destroyed) from such a constructor (or destructor) is undefined.%
+destroyed) from such a constructor (or destructor) is undefined\ubdef{class.abstract.pure.virtual}.%
 \indextext{derived class|)}
 
 \rSec1[class.access]{Member access control}%
@@ -4918,7 +4938,7 @@ class X1 {
 class X2 {
   friend Ct;                    // OK, \tcode{class C} is a friend
   friend D;                     // error: \tcode{D} not found
-  friend class D;               // OK, elaborated-type-specifier declares new class
+  friend class D;               // OK, \grammarterm{elaborated-type-specifier} declares new class
 };
 
 template <typename ... Ts> class R {
@@ -5503,7 +5523,7 @@ is a \defnadj{delegating}{constructor}, and the constructor selected by the
 The target constructor is selected by overload resolution.
 Once the target constructor returns, the body of the delegating constructor
 is executed. If a constructor delegates to itself directly or indirectly,
-the program is ill-formed, no diagnostic required.
+the program is ill-formed, no diagnostic required\ifndrdef{class.base.init.delegate.itself}.
 \begin{example}
 \begin{codeblock}
 struct C {
@@ -5599,8 +5619,6 @@ An abstract class\iref{class.abstract} is never a most derived
 class, thus its constructors never initialize virtual base classes, therefore the
 corresponding \grammarterm{mem-initializer}{s} can be omitted.
 \end{note}
-An attempt to initialize more than one non-static data member of a union renders the
-program ill-formed.
 \indextext{initialization!const member}%
 \indextext{initialization!reference member}%
 \begin{note}
@@ -5635,6 +5653,18 @@ struct C {
 };
 \end{codeblock}
 \end{example}
+
+\pnum
+An attempt to initialize more than one non-static data member of a union renders the
+program ill-formed.
+
+\pnum
+An object's initialization is considered complete when
+a non-delegating constructor for that object returns.
+\begin{note}
+Therefore, an object's lifetime can begin\iref{basic.life}
+before all delegating constructors have completed.
+\end{note}
 
 \pnum
 If a given non-static data member has both a default member initializer
@@ -5818,7 +5848,7 @@ a precondition assertion of a constructor, or
 \item
 a postcondition assertion of a destructor\iref{dcl.contract.func},
 \end{itemize}
-the program has undefined behavior.
+the program has undefined behavior\ubdef{class.base.init.mem.fun}.
 \begin{example}
 \begin{codeblock}
 class A {
@@ -6015,9 +6045,10 @@ when the initialization of all subobjects is complete.%
 \indextext{destruction!member access}%
 For an object with a non-trivial constructor, referring to any non-static member
 or base class of the object before the constructor begins execution results in
-undefined behavior. For an object with a non-trivial destructor, referring to
+undefined behavior\ubdef{class.cdtor.before.ctor}.
+For an object with a non-trivial destructor, referring to
 any non-static member or base class of the object after the destructor finishes
-execution results in undefined behavior.
+execution results in undefined behavior\ubdef{class.cdtor.after.dtor}.
 \begin{example}
 \begin{codeblock}
 struct X { int i; };
@@ -6051,7 +6082,7 @@ struct Y {
 \end{example}
 
 \pnum
-During the construction of an object,
+During the initialization of an object,
 if the value of any of its subobjects
 or any element of its object representation
 is accessed through a glvalue that is not obtained, directly or indirectly, from
@@ -6102,7 +6133,7 @@ and the construction of all of its direct or indirect bases that directly or
 indirectly derive from
 \tcode{B}
 shall have started and the destruction of these classes shall not have
-completed, otherwise the conversion results in undefined behavior.
+completed, otherwise the conversion results in undefined behavior\ubdef{class.cdtor.convert.pointer}.
 To form a pointer to (or access the value of) a direct non-static member of
 an object
 \tcode{obj},
@@ -6110,7 +6141,7 @@ the construction of
 \tcode{obj}
 shall have started and its destruction shall not have completed,
 otherwise the computation of the pointer value (or accessing the member
-value) results in undefined behavior.
+value) results in undefined behavior\ubdef{class.cdtor.form.pointer}.
 \begin{example}
 \begin{codeblock}
 struct A { };
@@ -6154,7 +6185,7 @@ If the virtual function call uses an explicit class member access\iref{expr.ref}
 and the object expression refers to
 the complete object of \tcode{x} or one of that object's base class subobjects
 but not \tcode{x} or one of its base class subobjects, the behavior
-is undefined.
+is undefined\ubdef{class.cdtor.virtual.not.x}.
 \begin{example}
 \begin{codeblock}
 struct V {
@@ -6211,7 +6242,7 @@ If the operand of
 \tcode{typeid}
 refers to the object under construction or destruction and the static type of
 the operand is neither the constructor or destructor's class nor one of its
-bases, the behavior is undefined.
+bases, the behavior is undefined\ubdef{class.cdtor.typeid}.
 
 \pnum
 \indextext{construction!dynamic cast and}%
@@ -6236,7 +6267,7 @@ refers to the object under construction or destruction and the static type of
 the operand is not a pointer to or object of the constructor or destructor's
 own class or one of its bases, the
 \keyword{dynamic_cast}
-results in undefined behavior.
+results in undefined behavior\ubdef{class.cdtor.dynamic.cast}.
 \begin{example}
 \begin{codeblock}
 struct V {
@@ -6341,7 +6372,7 @@ always an lvalue.
 \end{itemize}
 Copy elision is not permitted
 where an expression is evaluated in a context
-requiring a constant expression\iref{expr.const}
+requiring a constant expression\iref{expr.const.const}
 and in constant initialization\iref{basic.start.static}.
 \begin{note}
 It is possible that copy elision is performed
@@ -6377,7 +6408,7 @@ constexpr A g() {
 }
 
 constexpr A a;          // well-formed, \tcode{a.p} points to \tcode{a}
-constexpr A b = g();    // error: \tcode{b.p} would be dangling\iref{expr.const}
+constexpr A b = g();    // error: \tcode{b.p} would be dangling\iref{expr.const.const}
 
 void h() {
   A c = g();            // well-formed, \tcode{c.p} can point to \tcode{c} or be dangling
@@ -6588,11 +6619,11 @@ is defined as deleted.
 \end{note}
 
 \pnum
-The direct base class subobjects of \tcode{C},
+The direct base class subobjects of an object \tcode{x} of class \tcode{C},
 in the order of their declaration in the \grammarterm{base-specifier-list} of \tcode{C},
-followed by the non-static data members of \tcode{C},
+followed by the direct member subobjects of \tcode{x},
 in the order of their declaration in the \grammarterm{member-specification} of \tcode{C},
-form a list of subobjects.
+form a list of subobjects for \tcode{x}.
 In that list, any subobject of array type is recursively expanded
 to the sequence of its elements, in the order of increasing subscript.
 Let $\tcode{x}_i$ be an lvalue denoting the $i^\text{th}$ element

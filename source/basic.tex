@@ -32,10 +32,26 @@ Clauses.
 \end{note}
 
 \pnum
-A \defn{name} is an \grammarterm{identifier}\iref{lex.name},
-\grammarterm{conversion-function-id}\iref{class.conv.fct},
-\grammarterm{operator-function-id}\iref{over.oper}, or
-\grammarterm{literal-operator-id}\iref{over.literal}.
+A \defn{name} is
+\begin{itemize}
+\item an \grammarterm{identifier} token\iref{lex.token, lex.name} other than
+  \begin{itemize}
+  \item
+  the \grammarterm{identifier} of a
+  \grammarterm{label}\iref{stmt.label} or
+  \grammarterm{literal-operator-id}\iref{over.literal},
+  \item
+  the \grammarterm{identifier} following a \keyword{goto} in a
+  \grammarterm{jump-statement}\iref{stmt.jump.general},
+  \item
+  any \grammarterm{identifier} in a
+  \grammarterm{module-name}\iref{module.unit} or
+  \grammarterm{attribute-token}\iref{dcl.attr.grammar}, or
+  \end{itemize}
+\item a \grammarterm{conversion-function-id}\iref{class.conv.fct},
+\item an \grammarterm{operator-function-id}\iref{over.oper}, or
+\item a \grammarterm{literal-operator-id}\iref{over.literal}.
+\end{itemize}
 
 \pnum
 Two names are \defnx{the same}{name!same} if
@@ -115,13 +131,15 @@ before continuing to parse the program that contains it.
 
 \pnum
 A \defn{variable} is introduced by the
-declaration of
+declaration $D$ of
 \begin{itemize}
 \item
 a reference other than a non-static data member or
 \item
-an object.
+an object,
 \end{itemize}
+where $D$ is not the \grammarterm{parameter-declaration} of
+a \grammarterm{template-parameter}.
 
 \pnum
 An \defn{entity} is a
@@ -177,7 +195,7 @@ unit.
 If so, the
 declaration specifies the interpretation and semantic properties of these names.
 A declaration of an entity $X$ is
-a redeclaration of $X$
+a \defn{redeclaration} of $X$
 if another declaration of $X$ is reachable from it\iref{module.reach};
 otherwise, it is a \defnadj{first}{declaration}.
 
@@ -274,7 +292,7 @@ that defines a function, a class, a variable, or a static data member,
 \item it is
 an explicit instantiation declaration\iref{temp.explicit}, or
 \item it is
-an explicit specialization\iref{temp.expl.spec} whose
+an \grammarterm{explicit-specialization}\iref{temp.expl.spec} whose
 \grammarterm{declaration} is not a definition.
 \end{itemize}
 A declaration is said to be a \defn{definition} of each entity that it defines.
@@ -492,13 +510,13 @@ if the expression is an \grammarterm{id-expression} or
 \grammarterm{splice-expression}\iref{expr.prim.splice}
 that designates it.
 A variable \tcode{x} that is named by a
-potentially-evaluated expression $N$
+potentially evaluated expression $N$
 that appears at a point $P$
 is \defnx{odr-used}{odr-use} by $N$ unless
 \begin{itemize}
 \item
 \tcode{x} is a reference
-that is usable in constant expressions at $P$\iref{expr.const}, or
+that is usable in constant expressions at $P$\iref{expr.const.init}, or
 \item
 $N$ is an element of the set of potential results of an expression $E$, where
 \begin{itemize}
@@ -552,10 +570,10 @@ if that expression is either an \grammarterm{id-expression} or
 a \grammarterm{splice-expression}
 that designates that structured binding.
 A structured binding is odr-used
-if it is named by a potentially-evaluated expression.
+if it is named by a potentially evaluated expression.
 
 \pnum
-\tcode{*\keyword{this}} is odr-used if \keyword{this} appears as a potentially-evaluated expression
+\tcode{*\keyword{this}} is odr-used if \keyword{this} appears as a potentially evaluated expression
 (including as the result of any implicit transformation to
 a class member access expression\iref{expr.prim.id.general}).
 
@@ -563,7 +581,7 @@ a class member access expression\iref{expr.prim.id.general}).
 A virtual member
 function is odr-used if it is not pure.
 A function is odr-used if it is named by
-a potentially-evaluated expression or conversion.
+a potentially evaluated expression or conversion.
 A non-placement allocation or deallocation
 function for a class is odr-used by the definition of a constructor of that
 class. A non-placement deallocation function for a class is odr-used by the
@@ -656,7 +674,7 @@ void h() {
 \pnum
 Every program shall contain at least one definition of every
 function or variable that is odr-used in that program
-outside of a discarded statement\iref{stmt.if}; no diagnostic required.
+outside of a discarded statement\iref{stmt.if}; no diagnostic required\ifndrdef{basic.def.odr.minimum.one.def}.
 The definition can appear explicitly in the program, it can be found in
 the standard or a user-defined library, or (when appropriate) it is
 implicitly defined (see~\ref{class.default.ctor}, \ref{class.copy.ctor},
@@ -739,26 +757,28 @@ defined\iref{class.derived}, or
 
 \pnum
 If a definable item \tcode{D} is defined in a translation unit
-by an injected declaration $X$\iref{expr.const} and
+by an injected declaration $X$\iref{expr.const.reflect} and
 another translation unit contains a definition of \tcode{D},
 that definition shall be an injected declaration
 having the same characteristic sequence as $X$;
 a diagnostic is required only if \tcode{D} is attached to a named module and
-a prior definition is reachable at the point where a later definition occurs.
+a prior definition is reachable
+at the point where a later definition occurs\ifndrdef{basic.def.odr.injected.match}.
 
 \pnum
 For any other definable item \tcode{D} with definitions in multiple translation units,
 \begin{itemize}
 \item
-if \tcode{D} is a non-inline non-templated function or variable, or
+if \tcode{D} is a non-inline non-templated function or variable\ifndrdef{basic.def.odr.maximum.one.def}, or
 \item
 if the definitions in different translation units
-do not satisfy the following requirements,
+do not satisfy the following requirements\ifndrdef{basic.def.odr.definition.matches},
 \end{itemize}
 the program is ill-formed;
 a diagnostic is required only
 if the definable item is attached to a named module and
-a prior definition is reachable at the point where a later definition occurs.
+a prior definition is reachable
+at the point where a later definition occurs.
 Given such an item,
 for all definitions of \tcode{D}, or,
 if \tcode{D} is an unnamed enumeration,
@@ -781,7 +801,7 @@ template specializations\iref{temp.spec.partial.match}, except that a name can r
 a non-volatile const object with internal or no linkage if the object
 \begin{itemize}
 \item has the same literal type in all definitions of \tcode{D},
-\item is initialized with a constant expression\iref{expr.const},
+\item is initialized with a constant expression\iref{expr.const.const},
 \item is not odr-used in any definition of \tcode{D}, and
 \item has the same value in all definitions of \tcode{D},
 \end{itemize}
@@ -939,7 +959,7 @@ there is more than one
 reachable unnamed enumeration definition in the same scope
 that have the same first enumerator name and
 do not have typedef names for linkage purposes\iref{dcl.enum},
-those unnamed enumeration types shall be the same; no diagnostic required.
+those unnamed enumeration types shall be the same; no diagnostic required\ifndrdef{basic.def.odr.unnamed.enum.same.type}.
 \indextext{one-definition rule|)}
 
 \rSec1[basic.scope]{Scope}%
@@ -999,7 +1019,7 @@ only to other template parameter scopes\iref{basic.scope.temp}.
 Corresponding declarations with appropriate linkage
 declare the same entity\iref{basic.link}.
 \item
-The declaration in a \grammarterm{template-declaration}
+The \grammarterm{declaration} of a \grammarterm{template-declaration}
 inhabits the same scope as the \grammarterm{template-declaration}.
 \item
 Friend declarations and
@@ -1660,7 +1680,12 @@ are the semantic properties introduced by the declarations
 used in further processing.
 
 \pnum
-A program point $P$ is said to follow
+There is a \defnadj{program}{point}
+before the first token of the translation unit,
+at least one between every pair of adjacent tokens, and
+at least one after the last token of the translation unit.
+
+A program point $P$ is said to \defnx{follow}{follow!program point}
 any declaration in the same translation unit
 whose locus\iref{basic.scope.pdecl} is before $P$.
 \begin{note}
@@ -1815,7 +1840,7 @@ The result of the search is the declaration set of $S(M,T)$.
 If it is an invalid set, the program is ill-formed.
 If it differs from the result of a search in $T$ for $M$
 in a complete-class context\iref{class.mem} of $T$,
-the program is ill-formed, no diagnostic required.
+the program is ill-formed, no diagnostic required\ifndrdef{class.member.lookup.name.refers.diff.decl}.
 \begin{example}
 \begin{codeblock}
 struct A { int x; };                    // S(x,A) = \{ \{ \tcode{A::x} \}, \{ \tcode{A} \} \}
@@ -2065,7 +2090,8 @@ int x = g<B, T2>();                     // \#1 calls \tcode{B::operator U1 T1::*
 \pnum
 In a friend declaration \grammarterm{declarator}
 whose \grammarterm{declarator-id} is a \grammarterm{qualified-id}
-whose lookup context\iref{basic.lookup.qual} is a class or namespace $S$,
+whose \grammarterm{nested-name-specifier}
+designates a class or namespace $S$\iref{expr.prim.id.qual},
 lookup for an unqualified name
 that appears after the \grammarterm{declarator-id}
 performs a search in the scope associated with $S$.
@@ -2150,7 +2176,7 @@ For purposes of determining
 rules apply.
 In some cases
 a name followed by \tcode{<} is treated as a \grammarterm{template-name}
-even though name lookup did not find a \grammarterm{template-name}
+even though name lookup did not find the declaration of a template
 (see \ref{temp.names}).
 For example,
 \begin{codeblock}
@@ -2268,11 +2294,11 @@ The \term{associated namespaces} for a call are
 the innermost enclosing non-inline namespaces for its associated entities
 as well as every element of the inline namespace set\iref{namespace.def}
 of those namespaces.
-Argument-dependent lookup finds
-all declarations of functions and function templates that
+Argument-dependent lookup for a name $N$ finds
+all declarations of functions and function templates named $N$ that
 \begin{itemize}
 \item
-are found by a search of any associated namespace, or
+are found by a search for $N$ in any associated namespace, or
 \item
 are declared as a friend\iref{class.friend} of any class
 with a reachable definition in the set of associated entities, or
@@ -2283,7 +2309,7 @@ do not appear in the translation unit containing the point of the lookup, and
 have the same innermost enclosing non-inline namespace scope as
 a declaration of an associated entity attached to \tcode{M}\iref{basic.link}.
 \end{itemize}
-If the lookup is for a dependent name\iref{temp.dep,temp.dep.candidate},
+If $N$ is a dependent name\iref{temp.dep,temp.dep.candidate},
 the above lookup is also performed
 from each point in the instantiation context\iref{module.context} of the lookup,
 additionally ignoring any declaration that
@@ -2557,13 +2583,13 @@ function names are ignored include names appearing in a
 \end{footnote}
 \begin{itemize}
 \item
-if the search finds the injected-class-name of \tcode{C}\iref{class.pre}, or
+if the search finds the injected-class-name of $C$\iref{class.pre}, or
 \item
 if $N$ is dependent and
 is the terminal name of a \grammarterm{using-declarator}\iref{namespace.udecl}
 that names a constructor,
 \end{itemize}
-$N$ is instead considered to name the constructor of class \tcode{C}.
+$N$ is instead considered to name the constructor of class $C$.
 Such a constructor name shall be used only
 in the \grammarterm{declarator-id} of a (friend) declaration of a constructor or
 in a \grammarterm{using-declaration}.
@@ -2834,7 +2860,7 @@ only namespace names are considered.%
 \pnum
 The \grammarterm{constant-expression} of a \grammarterm{splice-specifier}
 shall be a converted constant expression of
-type \tcode{std::meta::info}\iref{expr.const}.
+type \tcode{std::meta::info}\iref{expr.const.const}.
 A \grammarterm{splice-specifier}
 whose converted \grammarterm{constant-expression} represents
 a construct $X$ is said to \defn{designate} either
@@ -3055,9 +3081,7 @@ they appear in the same translation unit, or
 \item
 they both declare type aliases or namespace aliases that have the same underlying entity, or
 \item
-they both declare names with module linkage and are attached to the same module, or
-\item
-they both declare names with external linkage.
+they both declare names with module or external linkage and are attached to the same module.
 \end{itemize}
 \begin{note}
 There are other circumstances in which declarations declare
@@ -3074,9 +3098,11 @@ Such an $H$ can appear only in a header unit.
 \end{note}
 
 \pnum
-If two declarations of an entity are
-attached to different modules, the program is ill-formed;
-no diagnostic is required if neither is reachable from the other.
+\begin{note}
+If two declarations correspond but are
+attached to different modules, the program is ill-formed
+if one precedes the other\iref{basic.scope.scope}.
+\end{note}
 \begin{example}
 \begin{codeblocktu}{\tcode{"decls.h"}}
 int f();            // \#1, attached to the global module
@@ -3088,15 +3114,15 @@ module;
 #include "decls.h"
 export module M;
 export using ::f;   // OK, does not declare an entity, exports \#1
-int g();            // error: matches \#2, but attached to \tcode{M}
+int g();            // error: corresponds to \#2, but attached to \tcode{M}
 export int h();     // \#3
 export int k();     // \#4
 \end{codeblocktu}
 
 \begin{codeblocktu}{Other translation unit}
 import M;
-static int h();     // error: matches \#3
-int k();            // error: matches \#4
+static int h();     // error: conflicts with \#3
+int k();            // error: conflicts with \#4
 \end{codeblocktu}
 \end{example}
 As a consequence of these rules,
@@ -3142,7 +3168,8 @@ type aliases\iref{dcl.typedef} are replaced by the types they denote);
 declarations for an array
 object can specify array types that differ by the presence or absence of
 a major array bound\iref{dcl.array}.
-No diagnostic is required if neither declaration is reachable from the other.
+No diagnostic is required
+if neither declaration is reachable from the other\ifndrdef{basic.link.consistent.types}.
 \begin{example}
 \begin{codeblock}
 int f(int x, int x);    // error: different entities for \tcode{x}
@@ -3171,10 +3198,10 @@ $D$ contains
 a \grammarterm{reflect-expression} or a \grammarterm{splice-specifier}
 that, respectively, represents or designates $E$,
 \item
-$D$ is an injected declaration\iref{expr.const}
+$D$ is an injected declaration\iref{expr.const.reflect}
 whose characteristic sequence contains a reflection
 that represents
-a data member description ($T$, $N$, $A$, $W$, $\mathit{NUA}$)\iref{class.mem.general}
+a data member description ($T$, $N$, $A$, $W$, $\mathit{NUA}$, $\mathit{ANN}$)\iref{class.mem.general}
 for which $T$ is $E$,
 \item
 $E$ is not a function or function template and $D$ contains an
@@ -3278,7 +3305,7 @@ an annotation\iref{dcl.attr.annotation},
 a direct base class relationship $(D, B)$\iref{class.derived.general}
 for which either $D$ or $B$ is TU-local, or
 \item
-a data member description $(T, N, A, W, \mathit{NUA})$\iref{class.mem.general}
+a data member description $(T, N, A, W, \mathit{NUA}, \mathit{ANN})$\iref{class.mem.general}
 for which $T$ is TU-local.
 \end{itemize}
 \end{itemize}
@@ -3622,8 +3649,7 @@ An object is a \defnadj{potentially non-unique}{object} if it is
 \item
   the backing array of an initializer list\iref{dcl.init.ref}, or
 \item
-  the object introduced by a call to \tcode{std::meta::reflect_constant_array}
-  or \tcode{std::meta::reflect_constant_string}\iref{meta.define.static}, or
+  a template parameter object of array type\iref{meta.define.static}, or
 \item
   a subobject thereof.
 \end{itemize}
@@ -3639,18 +3665,18 @@ that are not bit-fields
 may have the same address if
 \begin{itemize}
 \item one is nested within the other,
-\item at least one is a subobject of zero size and they are not of similar types\iref{conv.qual},
+\item
+they are both nested within some complete object $o$,
+exactly one is a subobject of $o$, and the subobject is of zero size,
+\item
+they are both subobjects of the same complete object,
+at least one is a subobject of zero size, and
+they are not of similar types\iref{conv.qual},
 or
 \item they are both potentially non-unique objects;
 \end{itemize}
 otherwise, they have distinct addresses
 and occupy disjoint bytes of storage.
-\begin{footnote}
-Under the ``as-if'' rule an
-implementation is allowed to store two objects at the same machine address or
-not store an object at all if the program cannot observe the
-difference\iref{intro.execution}.
-\end{footnote}
 \begin{example}
 \begin{codeblock}
 static const char test1 = 'x';
@@ -3671,13 +3697,23 @@ the address of an unspecified byte of storage
 occupied by the complete object of that subobject.
 
 \pnum
+A \defnadj{union elemental}{subobject}
+\indextext{union!elemental subobject|see{subobject, union elemental}}
+is a direct member of a union or
+an element of an array that is a union elemental subobject.
+An \defnx{inactive union elemental subobject}{subobject!union elemental!inactive}
+\indextext{inactive union elemental subobject|see{subobject, union elemental, inactive}}
+\indextext{union!inactive elemental subobject|see{subobject, union elemental, inactive}}
+is a union elemental subobject that is not within its lifetime.
+
+\pnum
 The \defnx{constituent values}{constituent value} of an object $o$ are
 \begin{itemize}
 \item
 if $o$ has scalar type, the value of $o$;
 \item
 otherwise, the constituent values of any direct subobjects of $o$
-other than inactive union members.
+other than inactive union elemental subobjects.
 \end{itemize}
 The \defnx{constituent references}{constituent reference} of an object $o$ are
 \begin{itemize}
@@ -3685,8 +3721,46 @@ The \defnx{constituent references}{constituent reference} of an object $o$ are
 any direct members of $o$ that have reference type, and
 \item
 the constituent references of any direct subobjects of $o$
-other than inactive union members.
+other than inactive union elemental subobjects.
 \end{itemize}
+\begin{example}
+\begin{codeblock}
+struct A {
+  struct X {
+    int i;
+    int j;
+  };
+
+  struct Y {
+    X x1;
+    X x2;
+  };
+
+  union {
+    int i;
+    int arr[4];
+    Y y;
+  };
+};
+
+constexpr A v1;         // OK, no constituent values
+constexpr A v2{.i=1};   // OK, the constituent values are \tcode{\{v2.i\}}
+constexpr A v3 = []{
+  A a;
+  std::start_lifetime(a.arr);   // OK, \tcode{arr} is now the active element of the union
+  new (&a.arr[1]) int(1);
+  a.arr[2] = 2;
+  return a;
+}();                    // OK, the constituent values are \tcode{\{v3.arr[1], v3.arr[2]\}}
+constexpr A v4 = []{
+  A a;
+  a.y.x1.i = 1;
+  a.y.x2.j = 2;
+  return a;
+}();                    // error: the constituent values include \tcode{v4.y.x1.j} and \tcode{v4.y.x2.i}
+                        // which have erroneous value
+\end{codeblock}
+\end{example}
 
 \pnum
 Some operations are described as
@@ -3697,7 +3771,7 @@ that operation implicitly creates and starts the lifetime of
 zero or more objects of implicit-lifetime types\iref{term.implicit.lifetime.type}
 in its specified region of storage
 if doing so would result in the program having defined behavior.
-If no such set of objects would give the program defined behavior,
+If no such set of objects would give the program defined behavior\ubdef{intro.object.implicit.create},
 the behavior of the program is undefined.
 If multiple such sets of objects would give the program defined behavior,
 it is unspecified which such set of objects is created.
@@ -3715,7 +3789,7 @@ whose address is the address of the start of the region of storage,
 and produce a pointer value that points to that object,
 if that value would result in the program having defined behavior.
 If no such pointer value would give the program defined behavior,
-the behavior of the program is undefined.
+the behavior of the program is undefined\ubdef{intro.object.implicit.pointer}.
 If multiple such pointer values would give the program defined behavior,
 it is unspecified which such pointer value is produced.
 
@@ -3769,7 +3843,7 @@ requirement on every object of that type; stricter alignment can be requested
 using the \grammarterm{alignment-specifier}\iref{dcl.align}.
 Attempting to create an object\iref{intro.object} in storage that
 does not meet the alignment requirements of the object's type
-is undefined behavior.
+is undefined behavior\ubdef{basic.align.object.alignment}.
 
 \pnum
 A \defnadj{fundamental}{alignment} is represented by an alignment
@@ -3826,8 +3900,8 @@ The alignment requirement of a complete type can be queried using an
 the narrow character types\iref{basic.fundamental} shall have the weakest
 alignment requirement.
 \begin{note}
-This enables the ordinary character types to be used as the
-underlying type for an aligned memory area\iref{dcl.align}.
+The type \tcode{\keyword{unsigned} \keyword{char}} can be used as
+the element type of an array providing aligned storage\iref{dcl.align}.
 \end{note}
 
 \pnum
@@ -3871,13 +3945,14 @@ The lifetime of an object of type \tcode{T} begins when:
 \item storage with the proper alignment and size
   for type \tcode{T} is obtained, and
 \item its initialization (if any) is complete
-  (including vacuous initialization)\iref{dcl.init},
+  (including vacuous initialization)\iref{dcl.init,class.base.init},
 \end{itemize}
 except that if the object is a union member or subobject thereof,
 its lifetime only begins if that union member is the
 initialized member in the union\iref{dcl.init.aggr,class.base.init},
 or as described in
-\ref{class.union}, \ref{class.copy.ctor}, and \ref{class.copy.assign},
+\ref{class.union}, \ref{class.copy.ctor}, \ref{class.copy.assign},
+and \ref{obj.lifetime},
 and except as described in \ref{allocator.members}.
 The lifetime of an object \placeholder{o} of type \tcode{T} ends when:
 \begin{itemize}
@@ -3958,19 +4033,20 @@ storage\iref{basic.stc.dynamic.allocation}, and using the pointer as
 if the pointer were of type \tcode{\keyword{void}*} is
 well-defined. Indirection through such a pointer is permitted but the resulting lvalue may only be used in
 limited ways, as described below. The
-program has undefined behavior if
+program has undefined behavior if:
 \begin{itemize}
 \item
-  the pointer is used as the operand of a \grammarterm{delete-expression},
+  the pointer is used as the operand of a \grammarterm{delete-expression}\ubdef{lifetime.outside.pointer.delete},
 \item
   the pointer is used to access a non-static data member or call a
-  non-static member function of the object, or
+  non-static member function of the object\ubdef{lifetime.outside.pointer.member}, or
 \item
   the pointer is converted\iref{conv.ptr,expr.static.cast} to a pointer
-  to a virtual base class or to a base class thereof, or
+  to a virtual base class\ubdef{lifetime.outside.pointer.virtual} or
+  to a base class thereof, or
 \item
   the pointer is used as the operand of a
-  \keyword{dynamic_cast}\iref{expr.dynamic.cast}.
+  \keyword{dynamic_cast}\iref{expr.dynamic.cast}\ubdef{lifetime.outside.pointer.dynamic.cast}.
 \end{itemize}
 \begin{example}
 \begin{codeblock}
@@ -4013,14 +4089,14 @@ Otherwise, such
 a glvalue refers to
 allocated storage\iref{basic.stc.dynamic.allocation}, and using the
 properties of the glvalue that do not depend on its value is
-well-defined. The program has undefined behavior if
+well-defined. The program has undefined behavior if:
 \begin{itemize}
-\item the glvalue is used to access the object, or
-\item the glvalue is used to call a non-static member function of the object, or
-\item the glvalue is bound to a reference to a virtual base class\iref{dcl.init.ref}, or
+\item the glvalue is used to access the object\ubdef{lifetime.outside.glvalue.access}, or
+\item the glvalue is used to call a non-static member function of the object\ubdef{lifetime.outside.glvalue.member}, or
+\item the glvalue is bound to a reference to a virtual base class\iref{dcl.init.ref}\ubdef{lifetime.outside.glvalue.virtual}, or
 \item the glvalue is used as the operand of a
 \keyword{dynamic_cast}\iref{expr.dynamic.cast} or as the operand of
-\keyword{typeid}.
+\keyword{typeid}\ubdef{lifetime.outside.glvalue.dynamic.cast}.
 \end{itemize}
 
 \begin{note}
@@ -4105,7 +4181,7 @@ with static storage duration.
 \end{footnote}
 and another object of the original type does not occupy
 that same storage location when the implicit destructor call takes
-place, the behavior of the program is undefined. This is true
+place, the behavior of the program is undefined\ubdef{original.type.implicit.destructor}. This is true
 even if the block is exited with an exception.
 \begin{example}
 \begin{codeblock}
@@ -4125,7 +4201,7 @@ void h() {
 Creating a new object within the storage that a const, complete
 object with static, thread, or automatic storage duration occupies,
 or within the storage that such a const object used to occupy before
-its lifetime ended, results in undefined behavior.
+its lifetime ended, results in undefined behavior\ubdef{creating.within.const.complete.obj}.
 \begin{example}
 \begin{codeblock}
 struct B {
@@ -4186,7 +4262,7 @@ produces an erroneous value,
 then the value produced by that operator is erroneous.
 Except in the following cases,
 if an indeterminate value is produced by an evaluation,
-the behavior is undefined, and
+the behavior is undefined\ubdef{basic.indet.value}, and
 if an erroneous value is produced by an evaluation,
 the behavior is erroneous and
 the result of the evaluation is that erroneous value:
@@ -4473,7 +4549,7 @@ If the behavior of an allocation or deallocation function
 does not satisfy the semantic constraints
 specified in~\ref{basic.stc.dynamic.allocation}
 and~\ref{basic.stc.dynamic.deallocation},
-the behavior is undefined.
+the behavior is undefined\ubdef{basic.stc.alloc.dealloc.constraint}.
 
 \indextext{storage duration!dynamic|)}
 
@@ -4483,7 +4559,7 @@ the behavior is undefined.
 \indextext{function!allocation}%
 An allocation function that is not a class member function
 shall belong to the global scope and not have a name with internal linkage.
-The return type shall be \tcode{\keyword{void}*}. The first
+The return type shall be ``pointer to \keyword{void}''. The first
 parameter shall have type \tcode{std::size_t}\iref{support.types}. The
 first parameter shall not have an associated default
 argument\iref{dcl.fct.default}. The value of the first parameter
@@ -4513,7 +4589,7 @@ in~\ref{new.delete.single} and~\ref{new.delete.array},
 \tcode{p0} represents the address of a block of storage disjoint from the storage
 for any other object accessible to the caller.
 The effect of indirecting through a pointer
-returned from a request for zero size is undefined.
+returned from a request for zero size is undefined\ubdef{basic.stc.alloc.zero.dereference}.
 \begin{footnote}
 The intent is
 to have \tcode{\keyword{operator} \keyword{new}()} implementable by
@@ -4602,11 +4678,13 @@ Array deletion cannot use a destroying operator delete.
 \pnum
 \indextext{\idxcode{delete}!overloading and}%
 Each deallocation function shall return \keyword{void}.
+A deallocation function shall not have
+a potentially throwing exception specification\iref{except.spec}.
 If the function is a destroying operator delete
 declared in class type \tcode{C},
-the type of its first parameter shall be \tcode{C*};
+the type of its first parameter shall be ``pointer to \tcode{C}'';
 otherwise, the type of its first
-parameter shall be \tcode{\keyword{void}*}. A deallocation function may have more
+parameter shall be ``pointer to \keyword{void}''. A deallocation function may have more
 than one parameter.
 \indextext{deallocation function!usual}%
 A \defn{usual deallocation function} is a deallocation function
@@ -4636,7 +4714,6 @@ instance is never a usual deallocation function, regardless of its
 signature.
 
 \pnum
-If a deallocation function terminates by throwing an exception, the behavior is undefined.
 The value of the first argument supplied to a deallocation function may
 be a null pointer value; if so, and if the deallocation function is one
 supplied in the standard library, the call has no effect.
@@ -4743,7 +4820,7 @@ of \tcode{X::operator=(const X\&)} can bind to it.
 
 \pnum
 When an object of type \tcode{X}
-is passed to or returned from a potentially-evaluated function call,
+is passed to or returned from a potentially evaluated function call,
 if \tcode{X} is
 \begin{itemize}
 \item
@@ -4953,7 +5030,7 @@ initialized from $E$.
 \pnum
 The sixth context is when a temporary object is created
 in the \grammarterm{expansion-initializer}
-of a destructuring expansion statement.
+of an iterating or destructuring expansion statement.
 If such a temporary object would otherwise be destroyed
 at the end of that \grammarterm{expansion-initializer},
 the object persists for the lifetime of the reference
@@ -5096,57 +5173,6 @@ or functions\iref{dcl.fct}.
 \end{note}
 
 \pnum
-\indextext{object!byte copying and|(}%
-\indextext{type!trivially copyable}%
-For any object (other than a potentially-overlapping subobject) of trivially copyable type
-\tcode{T}, whether or not the object holds a valid value of type
-\tcode{T}, the underlying bytes\iref{intro.memory} making up the
-object can be copied into an array of
-\keyword{char},
-\tcode{\keyword{unsigned} \keyword{char}}, or
-\tcode{std::byte}\iref{cstddef.syn}.
-\begin{footnote}
-By using, for example, the library
-functions\iref{headers} \tcode{std::memcpy} or \tcode{std::memmove}.
-\end{footnote}
-If the content of that array
-is copied back into the object, the object shall
-subsequently hold its original value.
-\begin{example}
-\begin{codeblock}
-constexpr std::size_t N = sizeof(T);
-char buf[N];
-T obj;                          // \tcode{obj} initialized to its original value
-std::memcpy(buf, &obj, N);      // between these two calls to \tcode{std::memcpy}, \tcode{obj} might be modified
-std::memcpy(&obj, buf, N);      // at this point, each subobject of \tcode{obj} of scalar type holds its original value
-\end{codeblock}
-\end{example}
-
-\pnum
-For two distinct objects \tcode{obj1} and \tcode{obj2}
-of trivially copyable type \tcode{T},
-where neither \tcode{obj1} nor \tcode{obj2} is a potentially-overlapping subobject,
-if the underlying bytes\iref{intro.memory} making up
-\tcode{obj1} are copied into \tcode{obj2},
-\begin{footnote}
-By using, for example,
-the library functions\iref{headers} \tcode{std::memcpy} or \tcode{std::memmove}.
-\end{footnote}
- \tcode{obj2} shall subsequently hold the same value as
-\tcode{obj1}.
-\begin{example}
-\begin{codeblock}
-T* t1p;
-T* t2p;
-    // provided that \tcode{t2p} points to an initialized object ...
-std::memcpy(t1p, t2p, sizeof(T));
-    // at this point, every subobject of trivially copyable type in \tcode{*t1p} contains
-    // the same value as the corresponding subobject in \tcode{*t2p}
-\end{codeblock}
-\end{example}
-\indextext{object!byte copying and|)}
-
-\pnum
 \label{term.object.representation}%
 The \defnx{object representation}{representation!object}
 of a complete object type \tcode{T} is the
@@ -5172,10 +5198,6 @@ participate in representing its value.
 Bits in the object representation of a type or object that are
 not part of the value representation
 are \defn{padding bits}.
-For trivially copyable types, the value representation is
-a set of bits in the object representation that determines a
-\defn{value}, which is one discrete element of an
-\impldef{values of a trivially copyable type} set of values.
 \begin{footnote}
 The intent is that the memory model of \Cpp{} is compatible
 with that of the C programming language.
@@ -5222,7 +5244,7 @@ In either case, the array type cannot be completed.
 \begin{codeblock}
 class X;                        // \tcode{X} is an incomplete type
 extern X* xp;                   // \tcode{xp} is a pointer to an incomplete type
-extern int arr[];               // the type of arr is incomplete
+extern int arr[];               // the type of \tcode{arr} is incomplete
 typedef int UNKA[];             // \tcode{UNKA} is an incomplete type
 UNKA* arrp;                     // \tcode{arrp} is a pointer to an incomplete type
 UNKA** arrpp;
@@ -5328,30 +5350,85 @@ if \tcode{T1} and \tcode{T2} are the same type,
 layout-compatible enumerations\iref{dcl.enum}, or
 layout-compatible standard-layout class types\iref{class.mem}.
 
+\rSec2[basic.types.trivial]{Trivially copyable types}
+
 \pnum
-A type is \defn{consteval-only} if it is
-\begin{itemize}
-\item \tcode{std::meta::info},
-\item \cv{}~\tcode{T}, where \tcode{T} is a consteval-only type,
-\item a pointer or reference to a consteval-only type,
-\item an array of consteval-only type,
-\item a function type having a return type or any parameter type that is consteval-only,
-\item a class type with any non-static data member having consteval-only type, or
-\item a type ``pointer to member of class \tcode{C} of type \tcode{T}'',
-where at least one of \tcode{C} or \tcode{T} is a consteval-only type.
-\end{itemize}
-Every object of consteval-only type shall be
-\begin{itemize}
-\item
-the object associated with a constexpr variable or a subobject thereof,
-\item
-a template parameter object\iref{temp.param} or a subobject thereof, or
-\item
-an object whose lifetime begins and ends
-during the evaluation of a core constant expression.
-\end{itemize}
-Every function of consteval-only type shall be
-an immediate function\iref{expr.const}.
+Each trivially copyable type \tcode{T} has an
+\impldef{values of a trivially copyable type}
+set of discrete \defnx{values}{value}.
+\indextext{value!representation}%
+Each possible value representation of an object of type \tcode{T}
+corresponds to a distinct
+\impldef{subset of values of a trivially copyable type
+         to which a value representation corresponds}
+subset of this set.
+The union of these subsets is the set of values;
+for scalar types other than object pointer types,
+each such subset contains no more than one value.
+Certain operations cause an object to
+\indextext{object!acquiring a value representation}%
+\indextext{value!representation!aquire}%
+\defn{acquire} a value representation,
+in which case the object's value
+is replaced with an unspecified member of the corresponding subset that
+would result in the program having defined behavior, if any.
+
+\pnum
+\begin{note}
+A single subset for a pointer type
+can contain pointers to multiple objects
+in each of several regions of storage whose durations are disjoint.
+\end{note}
+
+\pnum
+\indextext{object!byte copying and|(}%
+\indextext{type!trivially copyable}%
+If an object of such a type \tcode{T}
+is not a potentially-overlapping subobject,
+whether or not the object holds a valid value of type
+\tcode{T}, the underlying bytes\iref{intro.memory} making up the
+object can be copied into an array of
+\keyword{char},
+\tcode{\keyword{unsigned} \keyword{char}}, or
+\tcode{std::byte}\iref{cstddef.syn}.
+\begin{footnote}
+By using, for example, the library
+functions\iref{headers} \tcode{std::memcpy} or \tcode{std::memmove}.
+\end{footnote}
+If the content of that array
+is copied back into the object,
+the object acquires its original value representation.
+\begin{example}
+\begin{codeblock}
+constexpr std::size_t N = sizeof(T);
+char buf[N];
+T obj;                          // \tcode{obj} initialized to its original value
+std::memcpy(buf, &obj, N);      // between these two calls to \tcode{std::memcpy}, \tcode{obj} might be modified
+std::memcpy(&obj, buf, N);      // at this point, each subobject of \tcode{obj} of scalar type holds its original value
+\end{codeblock}
+\end{example}
+
+\pnum
+For two distinct such objects \tcode{obj1} and \tcode{obj2},
+if the underlying bytes\iref{intro.memory} making up
+\tcode{obj1} are copied into \tcode{obj2},
+\begin{footnote}
+By using, for example,
+the library functions\iref{headers} \tcode{std::memcpy} or \tcode{std::memmove}.
+\end{footnote}
+ \tcode{obj2} acquires the value representation of
+\tcode{obj1}.
+\begin{example}
+\begin{codeblock}
+T* t1p;
+T* t2p;
+    // provided that \tcode{t2p} points to an initialized object ...
+std::memcpy(t1p, t2p, sizeof(T));
+    // at this point, every subobject of trivially copyable type in \tcode{*t1p} contains
+    // the same value as the corresponding subobject in \tcode{*t2p}
+\end{codeblock}
+\end{example}
+\indextext{object!byte copying and|)}
 
 \rSec2[basic.fundamental]{Fundamental types}
 
@@ -5375,11 +5452,6 @@ The range of representable values for a signed integer type is
 $-2^{N-1}$ to $2^{N-1}-1$ (inclusive),
 where $N$ is called the \defn{width} of the type.
 \indextext{integral type!implementation-defined \tcode{sizeof}}%
-\begin{note}
-Plain \tcode{int}s are intended to have
-the natural width suggested by the architecture of the execution environment;
-the other signed integer types are provided to meet special needs.
-\end{note}
 
 \pnum
 \indextext{type!\idxcode{unsigned}}%
@@ -5521,7 +5593,7 @@ signed or unsigned integer type as its underlying type.
 \indextext{\idxcode{char8_t}|see{type, \tcode{char8_t}}}%
 \indextext{type!\idxcode{char8_t}}%
 \indextext{type!underlying!\idxcode{char8_t}}%
-Type \keyword{char8_t} denotes a distinct type
+Type \keyword{char8_t} is a distinct type
 whose underlying type is \tcode{\keyword{unsigned} \keyword{char}}.
 \indextext{\idxcode{char16_t}|see{type, \tcode{char16_t}}}%
 \indextext{\idxcode{char32_t}|see{type, \tcode{char32_t}}}%
@@ -5529,7 +5601,7 @@ whose underlying type is \tcode{\keyword{unsigned} \keyword{char}}.
 \indextext{type!\idxcode{char32_t}}%
 \indextext{type!underlying!\idxcode{char16_t}}%
 \indextext{type!underlying!\idxcode{char32_t}}%
-Types \keyword{char16_t} and \keyword{char32_t} denote distinct types
+Types \keyword{char16_t} and \keyword{char32_t} are distinct types
 whose underlying types are \tcode{std::uint_least16_t} and \tcode{std::uint_least32_t},
 respectively, in \libheaderref{cstdint}.
 
@@ -5609,13 +5681,14 @@ the most negative finite floating-point number representable
 in that type through
 the most positive finite floating-point number representable in that type.
 In addition, if negative infinity is representable in a type,
-the range of that type is extended to all negative real numbers;
+the range of representable values of that type is extended to all negative real numbers;
 likewise, if positive infinity is representable in a type,
-the range of that type is extended to all positive real numbers.
+the range of representable values of that type is extended to all positive real numbers.
 \begin{note}
 Since negative and positive infinity are representable
 in \IsoFloatUndated{} formats,
-all real numbers lie within the range of representable values of
+all real numbers (but not infinity or NaN)
+lie within the range of representable values of
 a floating-point type adhering to \IsoFloatUndated{}.
 \end{note}
 
@@ -5635,13 +5708,12 @@ can be queried using the facilities in the standard library headers
 \indextext{type!\idxcode{void}}%
 A type \cv{}~\keyword{void}
 is an incomplete type that cannot be completed; such a type has
-an empty set of values. It is used as the return
-type for functions that do not return a value.
+an empty set of values.
 \begin{note}
 An expression of type \cv{}~\keyword{void} can be used as
 \begin{itemize}
-\item an expression statement\iref{stmt.expr},
-\item the expression in a \keyword{return} statement\iref{stmt.return}
+\item the \grammarterm{expression} of an expression statement\iref{stmt.expr},
+\item the operand of a \keyword{return} statement\iref{stmt.return}
 for a function with the return type \cv{}~\keyword{void},
 \item an operand of a comma expression\iref{expr.comma},
 \item the operand of a parenthesized expression\iref{expr.prim.paren},
@@ -5660,7 +5732,12 @@ The types denoted by \cv~\tcode{std::nullptr_t} are distinct types.
 A prvalue of type \tcode{std::nullptr_t} is a null pointer
 constant\iref{conv.ptr}. Such values participate in the pointer and the
 pointer-to-member conversions\iref{conv.ptr,conv.mem}.
-\tcode{\keyword{sizeof}(std::nullptr_t)} shall be equal to \tcode{\keyword{sizeof}(\keyword{void}*)}.
+The size\iref{expr.sizeof} and alignment requirement\iref{basic.align} of
+the type \tcode{std::nullptr_t} are those of
+the type ``pointer to \keyword{void}''.
+\begin{note}
+The value representation can comprise no bits\iref{conv.lval}.
+\end{note}
 
 \pnum
 A value of type \tcode{std::meta::info} is called a \defn{reflection}.
@@ -5771,7 +5848,7 @@ same value representation, they are nevertheless different types.
 If the implementation supports an extended floating-point type\iref{basic.fundamental}
 whose properties are specified by
 the \IsoFloatUndated{} floating-point interchange format binary16,
-then the \grammarterm{typedef-name} \tcode{std::float16_t}
+then the type alias \tcode{std::float16_t}
 is declared in the header \libheaderref{stdfloat} and names such a type,
 the macro \mname{STDCPP_FLOAT16_T} is defined\iref{cpp.predefined}, and
 the floating-point literal suffixes \tcode{f16} and \tcode{F16}
@@ -5781,7 +5858,7 @@ are supported\iref{lex.fcon}.
 If the implementation supports an extended floating-point type
 whose properties are specified by
 the \IsoFloatUndated{} floating-point interchange format binary32,
-then the \grammarterm{typedef-name} \tcode{std::float32_t}
+then the type alias \tcode{std::float32_t}
 is declared in the header \libheader{stdfloat} and names such a type,
 the macro \mname{STDCPP_FLOAT32_T} is defined, and
 the floating-point literal suffixes \tcode{f32} and \tcode{F32} are supported.
@@ -5790,7 +5867,7 @@ the floating-point literal suffixes \tcode{f32} and \tcode{F32} are supported.
 If the implementation supports an extended floating-point type
 whose properties are specified by
 the \IsoFloatUndated{} floating-point interchange format binary64,
-then the \grammarterm{typedef-name} \tcode{std::float64_t}
+then the type alias \tcode{std::float64_t}
 is declared in the header \libheader{stdfloat} and names such a type,
 the macro \mname{STDCPP_FLOAT64_T} is defined, and
 the floating-point literal suffixes \tcode{f64} and \tcode{F64} are supported.
@@ -5799,7 +5876,7 @@ the floating-point literal suffixes \tcode{f64} and \tcode{F64} are supported.
 If the implementation supports an extended floating-point type
 whose properties are specified by
 the \IsoFloatUndated{} floating-point interchange format binary128,
-then the \grammarterm{typedef-name} \tcode{std::float128_t}
+then the type alias \tcode{std::float128_t}
 is declared in the header \libheader{stdfloat} and names such a type,
 the macro \mname{STDCPP_FLOAT128_T} is defined, and
 the floating-point literal suffixes \tcode{f128} and \tcode{F128} are supported.
@@ -5812,7 +5889,7 @@ storage width in bits ($k$) of 16,
 precision in bits ($p$) of 8,
 maximum exponent ($emax$) of 127, and
 exponent field width in bits ($w$) of 8, then
-the \grammarterm{typedef-name} \tcode{std::bfloat16_t}
+the type alias \tcode{std::bfloat16_t}
 is declared in the header \libheader{stdfloat} and names such a type,
 the macro \mname{STDCPP_BFLOAT16_T} is defined, and
 the floating-point literal suffixes \tcode{bf16} and \tcode{BF16} are supported.
@@ -5845,9 +5922,9 @@ Any names that the implementation provides for
 the extended floating-point types described in this subsection
 that are in addition to the names declared in the \libheader{stdfloat} header
 should be chosen to increase compatibility and interoperability
-with the interchange types
+with the interchange floating types
 \tcode{_Float16}, \tcode{_Float32}, \tcode{_Float64}, and \tcode{_Float128}
-defined in ISO/IEC TS 18661-3 and with future versions of \IsoCUndated{}.
+defined in \IsoC{} H.2.2.
 
 \rSec2[basic.compound]{Compound types}
 
@@ -5980,22 +6057,62 @@ alignment requirement.
 \end{note}
 
 \pnum
+A pointer value
+pointing to a potentially non-unique object $O$\iref{intro.object} is
+\indextext{value!associated with an evaluation}%
+\defn{associated with} the evaluation of
+\begin{itemize}
+\item
+the \grammarterm{string-literal}\iref{lex.string} that resulted in the string literal object,
+\item
+the initializer list\iref{dcl.init.list} that resulted in the backing array,
+or
+\item
+the initialization of
+the template parameter object\iref{temp.arg.nontype, meta.define.static}
+\end{itemize}
+that is $O$ or of which $O$ is a subobject.
+\begin{note}
+A pointer value obtained by pointer arithmetic\iref{expr.add}
+from a pointer value associated with an evaluation $E$
+is also associated with $E$.
+\end{note}
+
+\pnum
+If an evaluation produces or causes an object
+to have\iref{basic.types.trivial} a pointer value
+to or past the end of an object $O$ and
+happens before the beginning of the duration
+of the region of storage for $O$,
+the behavior is undefined.
+\begin{note}
+Relaxed atomic operations\iref{atomics.order} can produce such values.
+Conversions from integers avoid producing them\iref{expr.reinterpret.cast}.
+\end{note}
+
+\pnum
 A pointer value $P$ is
 \indextext{value!valid in the context of an evaluation}%
 \defn{valid in the context of} an evaluation $E$
 if $P$ is a pointer to function or a null pointer value, or
 if it is a pointer to or past the end of an object $O$ and
-$E$ happens before the end of the duration of the region of storage for $O$.
+$E$ happens after the beginning
+and happens before the end of the duration of the region of storage for $O$.
 If a pointer value $P$ is used in an evaluation $E$ and
-$P$ is not valid in the context of $E$,
-then the behavior is undefined if $E$ is
-an indirection\iref{expr.unary.op} or
-an invocation of a deallocation function\iref{basic.stc.dynamic.deallocation},
-and \impldef{invalid pointer value in the context of an evaluation} otherwise.
-\begin{footnote}
-Some implementations might define that
-copying such a pointer value causes a system-generated runtime fault.
-\end{footnote}
+$P$ is not valid in the context of $E$:
+\begin{itemize}
+\item If $E$ is an indirection\iref{expr.unary.op},
+the behavior is undefined\ubdef{basic.compound.invalid.pointer}.
+\item If $E$ either
+\begin{itemize}
+\item is a boolean conversion\iref{conv.bool} or
+\item is performed by
+a unary \tcode{+}, additive, three-way comparison, relational, or equality
+operator\iref{expr.compound},
+\end{itemize}
+the behavior is \impldef{invalid pointer value in the context of an evaluation}.
+\end{itemize}
+
 \begin{note}
 $P$ can be valid in the context of $E$ even
 if it points to a type unrelated to that of $O$ or
@@ -6173,8 +6290,8 @@ has the top-level cv-qualifier \keyword{volatile}.
 Every integer type has an \term{integer conversion rank} defined as follows:
 
 \begin{itemize}
-\item No two signed integer types other than \keyword{char} and \tcode{\keyword{signed}
-\keyword{char}} (if \keyword{char} is signed) have the same rank, even if they have
+\item No two signed integer types
+have the same rank, even if they have
 the same representation.
 
 \item The rank of a signed integer type is greater than the rank
@@ -6192,18 +6309,12 @@ corresponding signed integer type.
 \item The rank of any standard integer type is greater than the
 rank of any extended integer type with the same width.
 
-\item The rank of \keyword{char} equals the rank of \tcode{\keyword{signed} \keyword{char}}
-and \tcode{\keyword{unsigned} \keyword{char}}.
-
 \item The rank of \tcode{bool} is less than the rank of all
-standard integer types.
+other integer types.
 
 \item
-\indextext{type!\idxcode{wchar_t}}%
-\indextext{type!\idxcode{char16_t}}%
-\indextext{type!\idxcode{char32_t}}%
-The ranks of \keyword{char8_t}, \keyword{char16_t}, \keyword{char32_t}, and
-\keyword{wchar_t} equal the ranks of their underlying
+The ranks of the character types
+equal the ranks of their corresponding underlying
 types\iref{basic.fundamental}.
 
 \item The rank of any extended signed integer type relative to another
@@ -6252,7 +6363,7 @@ for example on platforms where all of
 \tcode{\keyword{long} \keyword{double}},
 \keyword{double}, and
 \tcode{std::float64_t}
-have the same set of values (see \IsoC H.4.3).
+have the same set of values (see \IsoC{} H.4.3).
 \end{tailnote}
 \end{itemize}
 \begin{note}
@@ -6337,9 +6448,9 @@ the constituent expressions of the \grammarterm{initializer} of the \grammarterm
 \item
 if $E$ is a function call\iref{expr.call} or implicitly invokes a function,
 the constituent expressions of each default argument\iref{dcl.fct.default}
-used in the call, or
+used in the call, and
 \item
-if $E$ creates an aggregate object\iref{dcl.init.aggr},
+if $E$ performs aggregate initialization\iref{dcl.init.aggr},
 the constituent expressions of each default member initializer\iref{class.mem}
 used in the initialization.
 \end{itemize}
@@ -6368,9 +6479,9 @@ A \defn{full-expression} is
 \item
 an unevaluated operand\iref{expr.context},
 \item
-a \grammarterm{constant-expression}\iref{expr.const},
+a \grammarterm{constant-expression}\iref{expr.const.core},
 \item
-an immediate invocation\iref{expr.const},
+an immediate invocation\iref{expr.const.imm},
 \item
 an \grammarterm{init-declarator}\iref{dcl.decl}
 (including such introduced by a structured binding\iref{dcl.struct.bind}) or
@@ -6437,7 +6548,7 @@ that defines the default argument.
 \indextext{value computation|(}%
 Reading an object designated by a \keyword{volatile} glvalue\iref{basic.lval},
 modifying an object,
-producing an injected declaration\iref{expr.const},
+producing an injected declaration\iref{expr.const.reflect},
 calling a library I/O function, or
 calling a function that does any of those operations
 are all \defn{side effects},
@@ -6510,7 +6621,7 @@ evaluations.
 The value computations of the operands of an
 operator are sequenced before the value computation of the result of the
 operator.
-The behavior is undefined if
+The behavior is undefined\iref{intro.multithread}\ubdef{intro.execution.unsequenced.modification} if
 \begin{itemize}
 \item
 \indextext{side effects}%
@@ -6558,12 +6669,12 @@ When invoking a function \placeholder{f} (whether or not the function is inline)
 every argument expression and
 the postfix expression designating \placeholder{f}
 are sequenced before
-every precondition assertion of \placeholder{f}\iref{dcl.contract.func},
+every precondition assertion of the function call\iref{expr.call},
 which in turn are sequenced before
 every expression or statement
 in the body of \placeholder{f},
 which in turn are sequenced before
-every postcondition assertion of \placeholder{f}.
+every postcondition assertion of the function call.
 
 \pnum
 For each
@@ -6617,11 +6728,14 @@ signal handler is usually unsequenced with respect to the rest of the program.
 
 \pnum
 During the evaluation of an expression
-as a core constant expression\iref{expr.const},
+as a core constant expression\iref{expr.const.core},
 evaluations of operands of individual operators and
 of subexpressions of individual expressions
 that are otherwise either unsequenced or indeterminately sequenced
 are evaluated in lexical order.
+For a function call\iref{expr.call},
+any default arguments used are evaluated in the order as if
+an argument were present for the corresponding parameter.
 
 \rSec2[intro.multithread]{Multi-threaded executions and data races}
 
@@ -6806,7 +6920,7 @@ conditions:
 \item $A$ happens before $B$ and
 \item there is no other
 \indextext{side effects}%
-side effect $X$ to $M$ such that $A$
+side effect $X$ on $M$ such that $A$
 happens before $X$ and $X$ happens before $B$.
 \end{itemize}
 
@@ -6918,7 +7032,7 @@ potentially concurrent conflicting actions, at least one of which is not atomic,
 and neither happens before the other,
 except for the special case for signal handlers described below.
 Any such data race results in undefined
-behavior.
+behavior\ubdef{intro.races.data}.
 \begin{note}
 It can be shown that programs that correctly use mutexes
 and \tcode{memory_order::seq_cst} operations to prevent all data races and use no
@@ -6977,8 +7091,8 @@ hardware race detection.
 \rSec3[intro.progress]{Forward progress}
 
 \pnum
-The implementation may assume that any thread will eventually do one of the
-following:
+The implementation may assume\ubdef{intro.progress.stops} that any thread
+will eventually do one of the following:
 \begin{itemize}
 \item terminate,
 \item invoke the function \tcode{std::this_thread::yield}\iref{thread.thread.this},
@@ -7282,7 +7396,7 @@ without leaving the current block (e.g., by calling the function
 objects with automatic storage duration\iref{class.dtor}. If
 \tcode{std::exit} is invoked during the destruction of
 an object with static or thread storage duration, the program has undefined
-behavior.
+behavior\ubdef{basic.start.main.exit.during.destruction}.
 
 \pnum
 \indextext{termination!program}%
@@ -7311,7 +7425,7 @@ Within each of these phases of initiation, initialization occurs as follows.
 \indextext{initialization!constant}%
 \defnx{Constant initialization}{constant initialization} is performed
 if a variable with static or thread storage duration
-is constant-initialized\iref{expr.const}.
+is constant-initialized\iref{expr.const.init}.
 \indextext{initialization!zero-initialization}%
 If constant initialization is not performed, a variable with static
 storage duration\iref{basic.stc.static} or thread storage
@@ -7349,16 +7463,18 @@ As a consequence, if the initialization of an object \tcode{obj1} refers to an
 object \tcode{obj2} potentially requiring dynamic initialization and defined
 later in the same translation unit, it is unspecified whether the value of \tcode{obj2} used
 will be the value of the fully initialized \tcode{obj2} (because \tcode{obj2} was statically
-initialized) or will be the value of \tcode{obj2} merely zero-initialized. For example,
+initialized) or will be the value of \tcode{obj2} merely zero-initialized. For example:
 \begin{codeblock}
 inline double fd() { return 1.0; }
 extern double d1;
-double d2 = d1;     // unspecified:
-                    // either statically initialized to \tcode{0.0} or
-                    // dynamically initialized to \tcode{0.0} if \tcode{d1} is
-                    // dynamically initialized, or \tcode{1.0} otherwise
-double d1 = fd();   // either initialized statically or dynamically to \tcode{1.0}
+double d2 = d1;
+double d1 = fd();
 \end{codeblock}
+Both \tcode{d1} and \tcode{d2} can be initialized
+either statically or dynamically.
+If \tcode{d1} is initialized statically and \tcode{d2} dynamically,
+both variables are initialized to \tcode{1.0};
+in all other cases, \tcode{d2} is initialized to \tcode{0.0}.
 \end{note}
 
 \rSec3[basic.start.dynamic]{Dynamic initialization of non-block variables}
@@ -7519,6 +7635,7 @@ If it is deferred,
 the initialization associated with the entity for thread \placeholder{t}
 is sequenced before the first non-initialization odr-use by \placeholder{t}
 of any non-inline variable with thread storage duration
+and dynamic initialization
 defined in the same translation unit as the variable to be initialized.
 It is \impldef{threads and program points at which deferred dynamic initialization is performed}
 in which threads and at which points in the program such deferred dynamic initialization occurs.
@@ -7562,7 +7679,7 @@ any object with static storage duration.
 
 \pnum
 The destruction of a complete object with thread storage duration within a given thread
-and having constant destruction\iref{expr.const}
+and having constant destruction\iref{expr.const.defns}
 is sequenced after the destruction of any other complete object
 with thread storage duration within the thread.
 The destruction of a complete object with static storage duration
@@ -7617,7 +7734,7 @@ as each element of the array is destroyed\iref{class.temporary}.
 \pnum
 If a function contains a block variable of static or thread storage duration that has been
 destroyed and the function is called during the destruction of an object with static or
-thread storage duration, the program has undefined behavior if the flow of control
+thread storage duration, the program has undefined behavior\ubdef{basic.start.term.use.after.destruction} if the flow of control
 passes through the definition of the previously destroyed block variable.
 \begin{note}
 Likewise, the behavior is undefined
@@ -7694,7 +7811,7 @@ expected.
 An invocation of the macro \tcode{va_start}\iref{cstdarg.syn}
 shall not be a subexpression
 of the predicate of a contract assertion,
-no diagnostic required.
+no diagnostic required\ifndrdef{basic.contract.vastart.contract.predicate}.
 
 \pnum
 \begin{note}
@@ -7711,8 +7828,8 @@ if a \grammarterm{result-name-introducer}\iref{dcl.contract.res} has been specif
 
 \pnum
 \indexdefn{evaluation semantics|see{contract evaluation semantics}}%
-\indexdefn{checking semantics|see{contract evaluation semantics!checking}}%
-\indexdefn{terminating semantics|see{contract evaluation semantics!terminating}}%
+\indexdefn{checking semantics|see{contract evaluation semantics, checking}}%
+\indexdefn{terminating semantics|see{contract evaluation semantics, terminating}}%
 An evaluation of a contract assertion
 uses one of the following four \defn{evaluation semantics}:
 \defnx{ignore}{contract evaluation semantics!ignore},
@@ -7801,7 +7918,7 @@ exits via an exception, or
 \item
 the evaluation of the predicate
 is performed in a context that is
-manifestly constant-evaluated\iref{expr.const}
+manifestly constant-evaluated\iref{expr.const.defns}
 and the predicate
 is not a core constant expression.
 \end{itemize}
@@ -7822,7 +7939,7 @@ or terminating the program.
 \pnum
 \indexdefn{contract evaluation semantics!terminating}%
 If a contract violation occurs
-in a context that is manifestly constant-evaluated\iref{expr.const},
+in a context that is manifestly constant-evaluated\iref{expr.const.defns},
 and the evaluation semantic is
 a terminating semantic,
 the program is ill-formed.
@@ -8100,6 +8217,6 @@ is replaceable\iref{term.replaceable.function}.
 If the contract-violation handler
 is not replaceable,
 a declaration of a replacement function for the contract-violation handler
-is ill-formed, no diagnostic required.
+is ill-formed, no diagnostic required\ifndrdef{basic.contract.handler.replacing.nonreplaceable}.
 
 \indextext{contract assertion|)}

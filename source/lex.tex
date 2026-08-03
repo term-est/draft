@@ -42,6 +42,13 @@ A \Cpp{} program need not all be translated at the same time.
 Translation units can be separately translated and then later linked
 to produce an executable program\iref{basic.link}.
 \end{note}
+\begin{note}
+Source files, translation units, and translated translation units
+need not necessarily be stored as files, nor need there be any one-to-one
+correspondence between these entities and any external representation.
+The description is conceptual only,
+and does not specify any particular implementation.
+\end{note}
 \indextext{compilation!separate|)}
 
 \rSec1[lex.phases]{Phases of translation}%
@@ -192,13 +199,6 @@ on which the current translation unit has an interface
 dependency\iref{module.unit,module.import}
 are required to be available.
 \begin{note}
-Source files, translation
-units and translated translation units need not necessarily be stored as
-files, nor need there be any one-to-one correspondence between these
-entities and any external representation. The description is conceptual
-only, and does not specify any particular implementation.
-\end{note}
-\begin{note}
 Previously translated translation units can be preserved individually or in libraries.
 The separate translation units of a program communicate\iref{basic.link} by (for example)
 calls to functions whose names have external or module linkage,
@@ -227,11 +227,14 @@ but its use in certain constant expressions could require
 that it be instantiated at an earlier point\iref{temp.inst}.
 \end{note}
 
-Each instantiation results in new program constructs.
 The program is ill-formed if any instantiation fails.
 
 During the analysis and translation of tokens,
-certain expressions are evaluated\iref{expr.const}.
+each manifestly constant-evaluated expression is evaluated\iref{expr.const.defns}.
+The values of these expressions affect
+the types named and reflection values used in the program and
+thus the syntactic analysis.
+Their evaluation also can produce side effects that affect that analysis.
 Constructs appearing at a program point $P$ are analyzed
 in a context where each side effect of evaluating an expression $E$
 as a full-expression is complete if and only if
@@ -261,19 +264,19 @@ class S {
     void fn() {
       /* @$p_1$@ */ Incomplete i;    // OK
     }
-  }; /* @$p_2$@ */
+  } /* @$p_2$@ */ ;
 
   consteval {
     define_aggregate(^^Incomplete, {});
   }
-}; /* @$p_3$@ */
+} /* @$p_3$@ */ ;
 \end{codeblock}
 Constructs at $p_1$ are analyzed in a context
-where the side effect of the call to \tcode{define_aggregate} is evaluated
+where the side effect of the call to \tcode{define_aggregate} is complete
 because
 \begin{itemize}
 \item
-$E$ is the expression corresponding to a consteval block, and
+the call appears in a consteval block, and
 \item
 $p_1$ is in a complete-class context of \tcode{S} and
 the consteval block is reachable from $p_3$.
@@ -500,8 +503,7 @@ designates the corresponding character
 in the Unicode Standard (chapter 4.8 Name)
 if the \grammarterm{n-char-sequence} is equal
 to its character name or
-to one of its character name aliases of
-type ``control'', ``correction'', or ``alternate'';
+to one of its character name aliases;
 otherwise, the program is ill-formed.
 \begin{note}
 These aliases are listed in
@@ -585,6 +587,7 @@ string literal.
 \pnum
 Each preprocessing token that is converted to a token\iref{lex.token}
 shall have the lexical form of a keyword, an identifier, a literal,
+a header name,
 or an operator or punctuator.
 
 \pnum
@@ -646,14 +649,22 @@ when a \grammarterm{header-name} token can be formed, and
 a \grammarterm{header-name}\iref{lex.header} is only formed
 \begin{itemize}
 \item
-immediately after the \tcode{include}, \tcode{embed}, or \tcode{import} preprocessing token in a
-\tcode{\#include}\iref{cpp.include}, \tcode{\#embed}\iref{cpp.embed}, or
-\tcode{import}\iref{cpp.import} directive, respectively, or
+immediately after the \tcode{include} or \tcode{embed} preprocessing token in a
+\tcode{\#include}\iref{cpp.include} or \tcode{\#embed}\iref{cpp.embed}
+directive, respectively, or
+\item
+immediately after an \tcode{import} preprocessing token that
+is at the start of a logical source line, or
 \item
 immediately after a preprocessing token sequence of \xname{has_include}
 or \xname{has_embed} immediately followed by \tcode{(}
 in a \tcode{\#if}, \tcode{\#elif}, or \tcode{\#embed} directive\iref{cpp.cond,cpp.embed}.
 \end{itemize}
+A preprocessing token is considered to be
+\defnx{immediately after}{token!immediately after}
+another preprocessing token if
+the preprocessing tokens are on the same logical source line and
+there are no intervening preprocessing tokens.
 \end{itemize}
 \end{itemize}
 
@@ -872,12 +883,14 @@ The set of alternative tokens is defined in
     identifier\br
     keyword\br
     literal\br
+    header-name\br
     operator-or-punctuator
 \end{bnf}
 
 \pnum
 \indextext{\idxgram{token}}%
-There are five kinds of tokens: identifiers, keywords, literals,
+There are six kinds of tokens: identifiers, keywords, literals,
+header names,
 operators, and other separators.
 \indextext{token|)}
 
@@ -895,14 +908,16 @@ operators, and other separators.
 \begin{bnf}
 \nontermdef{identifier-start}\br
     nondigit\br
-    \textnormal{an element of the translation character set with the Unicode property XID_Start}
+    \textnormal%
+	{an element of the translation character set with the Unicode property XID_Start or the Unicode property ID_Compat_Math_Start}
 \end{bnf}
 
 \begin{bnf}
 \nontermdef{identifier-continue}\br
     digit\br
     nondigit\br
-    \textnormal{an element of the translation character set with the Unicode property XID_Continue}
+    \textnormal%
+	{an element of the translation character set with the Unicode property XID_Continue or the Unicode property ID_Compat_Math_Continue}
 \end{bnf}
 
 \begin{bnf}
@@ -980,6 +995,12 @@ token as a regular \grammarterm{identifier}.
 \end{multicolfloattable}
 
 \pnum
+\begin{note}
+Identifiers with special meaning
+cannot be used as macro names\iref{cpp.replace.general}.
+\end{note}
+
+\pnum
 \indextext{\idxcode{_}|see{character, underscore}}%
 \indextext{character!underscore!in identifier}%
 \indextext{reserved identifier}%
@@ -987,7 +1008,7 @@ In addition, some identifiers
 appearing as a \grammarterm{token} or \grammarterm{preprocessing-token}
 are reserved for use by \Cpp{}
 implementations and shall
-not be used otherwise; no diagnostic is required.
+not be used otherwise; no diagnostic is required \ifndrdef{lex.name.reserved}.
 \begin{itemize}
 \item
 Each identifier that contains a double underscore
@@ -1021,7 +1042,7 @@ reserved to the implementation for use as a name in the global namespace.%
 \indextext{keyword|(}%
 The identifiers shown in \tref{lex.key} are reserved for use
 as keywords (that is, they are unconditionally treated as keywords in
-phase 7) except in an \grammarterm{attribute-token}\iref{dcl.attr.grammar}.
+phases 6 and 7) except in an \grammarterm{attribute-token}\iref{dcl.attr.grammar}.
 \begin{note}
 The \keyword{register} keyword is unused but
 is reserved for future use.
@@ -1116,6 +1137,11 @@ is reserved for future use.
 \keyword{wchar_t} \\
 \keyword{while} \\
 \end{multicolfloattable}
+
+\pnum
+\begin{note}
+Keywords cannot be used as macro names\iref{cpp.replace.general}.
+\end{note}
 
 \pnum
 Furthermore, the alternative representations shown in
@@ -1778,9 +1804,18 @@ If the scaled value is not in the range of representable
 values for its type, the program is ill-formed.
 Otherwise, the value of a \grammarterm{floating-point-literal}
 is the scaled value if representable,
-else the larger or smaller representable value nearest the scaled value,
+else the next greater or lesser value of the type,
 chosen in an \impldef{choice of larger or smaller value of
 \grammarterm{floating-point-literal}} manner.
+\begin{example}
+The following example assumes that
+\tcode{std::float32_t} is supported\iref{basic.extended.fp}.
+\begin{codeblock}
+std::float32_t x = 0.0f32;          // value \tcode{0} is exactly representable
+std::float32_t y = 0.1f32;          // rounded to one of two values nearest to \tcode{0.1}
+std::float32_t z = 1e1000000000f32; // either greatest finite value or positive infinity
+\end{codeblock}
+\end{example}
 
 \rSec2[lex.string]{String literals}
 

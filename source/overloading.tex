@@ -1056,7 +1056,8 @@ the non-explicit constructors\iref{class.conv.ctor} of that
 class.
 The argument list is the
 \grammarterm{expression-list} or \grammarterm{assignment-expression}
-of the \grammarterm{initializer}.
+of the \grammarterm{initializer};
+for default-initialization, the argument list is empty.
 For default-initialization in the context of copy-list-initialization,
 if an explicit constructor is chosen, the initialization is ill-formed.
 
@@ -1432,6 +1433,21 @@ J j = { "ghi" };    // error: cannot bind reference to array of \tcode{unsigned 
 \end{example}
 
 \pnum
+When resolving a placeholder for a deduced class type
+where the \grammarterm{template-name}
+designates a type template template parameter \tcode{P},
+the type template template argument for \tcode{P}
+shall be a deducible template.
+Let \tcode{A} be an alias template
+whose template parameter list is that of \tcode{P} and
+whose \grammarterm{defining-type-id} is a \grammarterm{simple-template-id}
+whose \grammarterm{template-name} designates the type template template argument and
+whose \grammarterm{template-argument-list} is the template argument list of \tcode{P}.
+The alias template \tcode{A} is then used
+instead of the original \grammarterm{template-name}
+to resolve the placeholder.
+
+\pnum
 When resolving a placeholder for a deduced class type\iref{dcl.type.simple}
 where
 the \grammarterm{template-name} or \grammarterm{splice-type-specifier}
@@ -1687,6 +1703,25 @@ template<std::@\libconcept{integral}@ W, class U>
 \end{example}
 \indextext{overloading!argument lists|)}%
 \indextext{overloading!candidate functions|)}
+
+\pnum
+\begin{example}
+\begin{codeblock}
+template<typename ... Ts>
+struct Y {
+  Y();
+  Y(Ts ...);
+};
+template<template<typename T = char> class X>
+void f() {
+  X x;          // OK, deduces \tcode{Y<char>}
+  X x0{};       // OK, deduces \tcode{Y<char>}
+  X x1{1};      // OK, deduces \tcode{Y<int>}
+  X x2{1, 2};   // error: cannot deduce \tcode{X<T>} from \tcode{Y<int, int>}
+}
+template void f<Y>();
+\end{codeblock}
+\end{example}
 
 \rSec2[over.match.viable]{Viable functions}%
 \indextext{overloading!resolution!viable functions|(}
@@ -3290,12 +3325,16 @@ int    (*p6)(long) = &(X::f);   // OK
 \begin{example}
 \begin{codeblock}
 template<bool B> struct X {
+  void e(int) requires B;       // \#1
+  void e(int);
   void f(short) requires B;
   void f(long);
   template<typename> void g(short) requires B;
   template<typename> void g(long);
 };
 void test() {
+  auto ep = &X<true>::e;        // OK, placeholder type deduction succeeds,
+                                // then selects \#1 as more partial-ordering-constrained
   &X<true>::f;                  // error: ambiguous; constraints are not considered
   &X<true>::g<int>;             // error: ambiguous; constraints are not considered
 }
@@ -3709,6 +3748,8 @@ and the expression is interpreted as
 \indextext{prefix ++ and -{-} overloading@prefix \tcode{++} and \tcode{--}!overloading}%
 \indextext{postfix ++ and -{-} overloading@postfix \tcode{++} and \tcode{--}!overloading}%
 
+\rSec3[over.inc.general]{General}
+
 \pnum
 \indextext{overloading!increment operator}%
 An \defnadj{increment}{operator function}
@@ -3773,6 +3814,104 @@ is a function named \tcode{\keyword{operator}--}
 and is handled analogously to an increment operator function.
 \indextext{overloading!operator|)}
 
+\rSec3[over.inc.default]{Defaulted function}
+
+\pnum
+A defaulted postfix increment or decrement operator function
+for a type \tcode{C} shall be a non-template function that
+\begin{itemize}
+\item
+has a first parameter of type ``reference to \tcode{C}'' or
+a first parameter of type ``reference to volatile \tcode{C}'',
+where the implicit object parameter (if any)
+is considered to be the first parameter,
+\item
+is defined as defaulted in \tcode{C} or
+in a context where \tcode{C} is complete, and
+\item
+has a declared return type of \tcode{C}.
+\end{itemize}
+\begin{note}
+A postfix increment or decrement operator
+always has a parameter of type \tcode{int}\iref{over.inc.general}.
+\end{note}
+Name lookups and access checks
+in the implicit definition\iref{dcl.fct.def.default} of
+a defaulted postfix increment or decrement operator function
+are performed from a context equivalent to its \grammarterm{function-body}.
+A definition of a postfix increment or decrement operator as defaulted
+that appears in a class shall be the first declaration of that function.
+\begin{example}
+\begin{codeblock}
+struct S;
+S operator++(S&, int) = default;        // error: \tcode{S} is not complete
+\end{codeblock}
+\end{example}
+
+\pnum
+A defaulted postfix increment or decrement operator function
+for a type \tcode{C}
+is defined as deleted if
+\begin{itemize}
+\item
+\tcode{C} is a class type for which overload resolution\iref{over.match},
+as applied to direct-initialization of a variable of type \tcode{C}
+from an lvalue of type \tcode{C}, does not result in a usable candidate,
+\item
+\tcode{C} has a destructor that is deleted or inaccessible
+from the context of the \grammarterm{function-body}, or
+\item
+for an lvalue \tcode{c} of type \tcode{C},
+overload resolution as applied to
+\tcode{++c} for a postfix increment operator function or
+\tcode{--c} for a postfix decrement operator function
+does not result in a usable candidate.
+\end{itemize}
+
+\pnum
+The implicit definition of
+a defaulted postfix increment or decrement operator function \tcode{F}
+that is not defined as deleted for a type \tcode{C} is equivalent to
+\begin{codeblock}
+C @\exposid{tmp}@(c);
+++c;
+return @\exposid{tmp}@;
+\end{codeblock}
+for a postfix increment operator function, or
+\begin{codeblock}
+C @\exposid{tmp}@(c);
+--c;
+return @\exposid{tmp}@;
+\end{codeblock}
+for a postfix decrement operator function,
+where \exposid{tmp} is a variable defined for exposition only, and
+\tcode{c} is an lvalue that denotes \tcode{*this}
+if \tcode{F} is an implicit object member function, or
+the first parameter of \tcode{F} otherwise.
+
+\pnum
+\begin{example}
+\begin{codeblock}
+struct S{
+  S(const S&) = default;
+  S& operator++() { return *this; }
+};
+S operator++(S, int) = default;         // error: incorrect parameter type
+
+struct T{
+  T operator++(int) = default;          // OK, defined as deleted
+};
+
+enum class E1 {};
+E1 operator++(E1&, int) = default;      // OK, defined as deleted; built-in \tcode{operator++}
+                                        // does not exist for enumeration types
+
+enum E2 {};
+E2& operator++(E2& e);
+E2 operator++(E2&, int) = default;      // OK, not deleted
+\end{codeblock}
+\end{example}
+
 \rSec1[over.built]{Built-in operators}%
 \indextext{overloading!built-in operators and}
 
@@ -3810,11 +3949,11 @@ to not be included in the set of candidate functions.
 In this subclause, the term
 \defn{promoted integral type}
 is used to refer to those cv-unqualified integral types which are preserved by
-integral promotion\iref{conv.prom} (including e.g.
+integral promotion\iref{conv.prom} (including e.g.,
 \tcode{int}
 and
 \tcode{long}
-but excluding e.g.
+but excluding e.g.,
 \tcode{char}).
 \begin{note}
 In all cases where a promoted integral type is
@@ -3898,7 +4037,7 @@ determination of the operator's result type.
 \pnum
 For every pair of types \tcode{\placeholder{L}} and \tcode{\placeholder{R}},
 where each of \tcode{\placeholder{L}} and \tcode{\placeholder{R}} is a
-floating-point or promoted integral type,
+cv-unqualified floating-point or promoted integral type,
 there exist candidate operator functions of the form
 \begin{codeblock}
 @\placeholder{LR}@      operator*(@\placeholder{L}@, @\placeholder{R}@);
@@ -3920,14 +4059,14 @@ and
 \tcode{\placeholder{R}}.
 
 \pnum
-For every integral type \tcode{\placeholder{T}}
+For every cv-unqualified integral type \tcode{\placeholder{T}}
 there exists a candidate operator function of the form
 \begin{codeblock}
 std::strong_ordering operator<=>(@\placeholder{T}@, @\placeholder{T}@);
 \end{codeblock}
 
 \pnum
-For every pair of floating-point types
+For every pair of cv-unqualified floating-point types
 \tcode{\placeholder{L}} and \tcode{\placeholder{R}},
 there exists a candidate operator function of the form
 \begin{codeblock}
@@ -4004,8 +4143,9 @@ and
 \pnum
 For every triple
 (\tcode{\placeholder{L}}, \cvqual{vq}, \tcode{\placeholder{R}}),
-where \tcode{\placeholder{L}} is an arithmetic type,
-and \tcode{\placeholder{R}} is a floating-point or promoted integral type,
+where \tcode{\placeholder{L}} is a cv-unqualified arithmetic type
+and \tcode{\placeholder{R}} is
+a cv-unqualified floating-point or promoted integral type,
 there exist candidate operator functions of the form
 \begin{codeblock}
 @\cvqual{vq} \placeholder{L}@&   operator=(@\cvqual{vq} \placeholder{L}@&, @\placeholder{R}@);
@@ -4055,7 +4195,7 @@ For every triple
 \tcode{\placeholder{R}}),
 where
 \tcode{\placeholder{L}}
-is an integral type, and
+is a cv-unqualified integral type and
 \tcode{\placeholder{R}}
 is a promoted integral type,
 there exist candidate operator functions of the form
@@ -4079,7 +4219,7 @@ bool    operator||(bool, bool);
 \pnum
 For every pair of types \tcode{\placeholder{L}} and \tcode{\placeholder{R}},
 where each of \tcode{\placeholder{L}} and \tcode{\placeholder{R}} is a
-floating-point or promoted integral type,
+cv-unqualified floating-point or promoted integral type,
 there exist candidate operator functions of the form
 \begin{codeblock}
 @\placeholder{LR}@      operator?:(bool, @\placeholder{L}@, @\placeholder{R}@);
@@ -4132,7 +4272,7 @@ the \grammarterm{identifier} in a \grammarterm{literal-operator-id} is called a
 The first form of \grammarterm{literal-operator-id} is deprecated\iref{depr.lit}.
 Some literal suffix identifiers are reserved for future standardization;
 see~\ref{usrlit.suffix}.  A declaration whose \grammarterm{literal-operator-id} uses
-such a literal suffix identifier is ill-formed, no diagnostic required.
+such a literal suffix identifier is ill-formed, no diagnostic required\ifndrdef{over.literal.reserved}.
 
 \pnum
 A declaration whose \grammarterm{declarator-id} is a

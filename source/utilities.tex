@@ -97,6 +97,19 @@ namespace std {
   [[noreturn]] void unreachable();
   void observable_checkpoint() noexcept;
 
+  // \ref{const.wrap.class}, class template \tcode{constant_wrapper}
+  template<auto X, class = decltype(X)>
+    struct constant_wrapper;
+
+  template<class T>
+    concept @\defexposconceptnc{constexpr-param}@ =           // \expos
+      requires { typename constant_wrapper<T::value>; };
+
+  struct @\exposidnc{cw-operators}@;                  // \expos
+
+  template<auto X>
+    constexpr auto @\libglobal{cw}@ = constant_wrapper<X>{};
+
   // \ref{intseq}, compile-time integer sequences%
 \indexlibraryglobal{index_sequence}%
 \indexlibraryglobal{make_index_sequence}%
@@ -225,15 +238,6 @@ namespace std {
     };
   template<size_t I> constexpr in_place_index_t<I> in_place_index{};
 
-  // \tcode{constant_arg} argument tag%
-\indexlibraryglobal{constant_arg_t}%
-\indexlibraryglobal{constant_arg}
-  template<auto V>
-    struct constant_arg_t {
-      explicit constant_arg_t() = default;
-    };
-  template<auto V> constexpr constant_arg_t<V> constant_arg{};
-
   // \ref{variant.monostate}, class \tcode{monostate}%
 \indexlibraryglobal{monostate}
   struct monostate;
@@ -277,7 +281,7 @@ requirements.
 
 \pnum
 \effects
-Exchanges values stored in two locations.
+Exchanges the values of \tcode{a} and \tcode{b}.
 
 \pnum
 \remarks
@@ -376,19 +380,19 @@ struct A {
 };
 
 void g() {
-  shared_ptr<A> sp1 = factory<A>(2, 1.414); // error: 2 will not bind to \tcode{int\&}
+  shared_ptr<A> sp1 = factory<A>(2, 1.414); // error: \tcode{2} will not bind to \tcode{int\&}
   int i = 2;
   shared_ptr<A> sp2 = factory<A>(i, 1.414); // OK
 }
 \end{codeblock}
 In the first call to \tcode{factory},
-\tcode{A1} is deduced as \tcode{int}, so 2 is forwarded
+\tcode{A1} is deduced as \tcode{int}, so \tcode{2} is forwarded
 to \tcode{A}'s constructor as an rvalue.
 In the second call to \tcode{factory},
 \tcode{A1} is deduced as \tcode{int\&}, so \tcode{i} is forwarded
 to \tcode{A}'s constructor as an lvalue. In
 both cases, \tcode{A2} is deduced as \tcode{double}, so
-1.414 is forwarded to \tcode{A}'s constructor as an rvalue.
+\tcode{1.414} is forwarded to \tcode{A}'s constructor as an rvalue.
 \end{example}
 \end{itemdescr}
 
@@ -741,6 +745,278 @@ void observable_checkpoint() noexcept;
 \pnum
 \effects
 Establishes an observable checkpoint\iref{intro.abstract}.
+\end{itemdescr}
+
+\rSec2[const.wrap.class]{Class template \tcode{constant_wrapper}}
+
+\begin{codeblock}
+namespace std {
+  struct @\exposidnc{cw-operators}@ {                                                 // \expos
+    // unary operators
+    template<@\exposconcept{constexpr-param}@ T>
+      friend constexpr auto operator+(T) noexcept -> constant_wrapper<(+T::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ T>
+      friend constexpr auto operator-(T) noexcept -> constant_wrapper<(-T::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ T>
+      friend constexpr auto operator~(T) noexcept -> constant_wrapper<(~T::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ T>
+      friend constexpr auto operator!(T) noexcept -> constant_wrapper<(!T::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ T>
+      friend constexpr auto operator&(T) noexcept -> constant_wrapper<(&T::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ T>
+      friend constexpr auto operator*(T) noexcept -> constant_wrapper<(*T::value)>
+        { return {}; }
+
+    // binary operators
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator+(L, R) noexcept -> constant_wrapper<(L::value + R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator-(L, R) noexcept -> constant_wrapper<(L::value - R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator*(L, R) noexcept -> constant_wrapper<(L::value * R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator/(L, R) noexcept -> constant_wrapper<(L::value / R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator%(L, R) noexcept -> constant_wrapper<(L::value % R::value)>
+        { return {}; }
+
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator<<(L, R) noexcept -> constant_wrapper<(L::value << R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator>>(L, R) noexcept -> constant_wrapper<(L::value >> R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator&(L, R) noexcept -> constant_wrapper<(L::value & R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator|(L, R) noexcept -> constant_wrapper<(L::value | R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator^(L, R) noexcept -> constant_wrapper<(L::value ^ R::value)>
+        { return {}; }
+
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      requires (!is_constructible_v<bool, decltype(L::value)> ||
+                !is_constructible_v<bool, decltype(R::value)>)
+        friend constexpr auto operator&&(L, R) noexcept
+          -> constant_wrapper<(L::value && R::value)>
+            { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      requires (!is_constructible_v<bool, decltype(L::value)> ||
+                !is_constructible_v<bool, decltype(R::value)>)
+        friend constexpr auto operator||(L, R) noexcept
+          -> constant_wrapper<(L::value || R::value)>
+            { return {}; }
+
+    // comparisons
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator<=>(L, R) noexcept
+        -> constant_wrapper<(L::value <=> R::value)>
+          { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator<(L, R) noexcept -> constant_wrapper<(L::value < R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator<=(L, R) noexcept -> constant_wrapper<(L::value <= R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator==(L, R) noexcept -> constant_wrapper<(L::value == R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator!=(L, R) noexcept -> constant_wrapper<(L::value != R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator>(L, R) noexcept -> constant_wrapper<(L::value > R::value)>
+        { return {}; }
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator>=(L, R) noexcept -> constant_wrapper<(L::value >= R::value)>
+        { return {}; }
+
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator,(L, R) noexcept = delete;
+    template<@\exposconcept{constexpr-param}@ L, @\exposconcept{constexpr-param}@ R>
+      friend constexpr auto operator->*(L, R) noexcept -> constant_wrapper<L::value->*(R::value)>
+        { return {}; }
+
+    // pseudo-mutators
+    template<@\exposconcept{constexpr-param}@ T>
+      constexpr auto operator++(this T) noexcept
+        -> constant_wrapper<(++T::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T>
+      constexpr auto operator++(this T, int) noexcept
+        -> constant_wrapper<(T::value++)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T>
+      constexpr auto operator--(this T) noexcept
+        -> constant_wrapper<(--T::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T>
+      constexpr auto operator--(this T, int) noexcept
+        -> constant_wrapper<(T::value--)> { return {}; }
+
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator+=(this T, R) noexcept
+        -> constant_wrapper<(T::value += R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator-=(this T, R) noexcept
+        -> constant_wrapper<(T::value -= R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator*=(this T, R) noexcept
+        -> constant_wrapper<(T::value *= R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator/=(this T, R) noexcept
+        -> constant_wrapper<(T::value /= R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator%=(this T, R) noexcept
+        -> constant_wrapper<(T::value %= R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator&=(this T, R) noexcept
+        -> constant_wrapper<(T::value &= R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator|=(this T, R) noexcept
+        -> constant_wrapper<(T::value |= R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator^=(this T, R) noexcept
+        -> constant_wrapper<(T::value ^= R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator<<=(this T, R) noexcept
+        -> constant_wrapper<(T::value <<= R::value)> { return {}; }
+    template<@\exposconcept{constexpr-param}@ T, @\exposconcept{constexpr-param}@ R>
+      constexpr auto operator>>=(this T, R) noexcept
+        -> constant_wrapper<(T::value >>= R::value)> { return {}; }
+  };
+
+  template<auto X, class T = decltype(X)>
+  struct @\libglobal{constant_wrapper}@ : @\exposid{cw-operators}@ {
+    static constexpr decltype(auto) value = (X);
+    using type = constant_wrapper;
+    using value_type = decltype(X);
+
+    template<@\exposconcept{constexpr-param}@ R>
+      constexpr auto operator=(R) const noexcept
+        -> constant_wrapper<(value = R::value)> { return {}; }
+
+    constexpr operator decltype(value)() const noexcept { return value; }
+
+    template<class... Args>
+      static constexpr decltype(auto) operator()(Args&&... args) noexcept(@\seebelow@);
+    template<class... Args>
+      static constexpr decltype(auto) operator[](Args&&... args) noexcept(@\seebelow@);
+  };
+}
+\end{codeblock}
+
+\pnum
+The class template \tcode{constant_wrapper} aids in metaprogramming by ensuring
+that the evaluation of expressions comprised entirely of \tcode{constant_wrapper}
+are core constant expressions\iref{expr.const.core},
+regardless of the context in which they appear.
+In particular, this enables use of \tcode{constant_wrapper} values
+that are passed as arguments to constexpr functions to be used in constant expressions.
+
+\pnum
+If a specialization of \tcode{constant_wrapper} is instantiated with a type \tcode{T}
+such that \tcode{is_same_v<T, value_type>} is \tcode{false},
+the program is ill-formed.
+\begin{note}
+The second template parameter to \tcode{constant_wrapper} is present
+to aid argument-dependent lookup\iref{basic.lookup.argdep}
+in finding overloads for which \tcode{constant_wrapper}'s wrapped value is a suitable argument,
+but for which the \tcode{constant_wrapper} itself is not.
+\end{note}
+
+\pnum
+\begin{example}
+\begin{codeblock}
+  constexpr auto initial_phase(auto quantity_1, auto quantity_2) {
+    return quantity_1 + quantity_2;
+  }
+
+  constexpr auto middle_phase(auto tbd) {
+    return tbd;
+  }
+
+  void final_phase(auto gathered, auto available) {
+    if constexpr (gathered == available)
+      std::cout << "Profit!\n";
+  }
+
+  void impeccable_underground_planning() {
+    auto gathered_quantity = middle_phase(initial_phase(std::cw<42>, std::cw<13>));
+    static_assert(gathered_quantity == 55);
+    auto all_available = std::cw<55>;
+    final_phase(gathered_quantity, all_available);
+  }
+
+  void deeply_flawed_underground_planning() {
+    constexpr auto gathered_quantity = middle_phase(initial_phase(42, 13));
+    constexpr auto all_available = 55;
+    final_phase(gathered_quantity, all_available);  // error: \tcode{gathered == available}
+                                                    // is not a constant expression
+  }
+\end{codeblock}
+\end{example}
+
+\indexlibrarymember{operator()}{constant_wrapper}%
+\begin{itemdecl}
+template<class... Args>
+  static constexpr decltype(auto) operator()(Args&&... args) noexcept(@\seebelow@);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{\placeholder{call-expr}} be
+\tcode{constant_wrapper<\placeholder{INVOKE}(value, remove_cvref_t<Args>::value...)>\{\}}
+if all types in \tcode{remove_cvref_t<Args>...} satisfy \exposconcept{constexpr-param} and
+\tcode{constant_wrapper<\placeholder{INVOKE}(val\-ue, remove_cvref_t<Args>::value...)>} is a valid type,
+otherwise let \tcode{\placeholder{call-expr}} be \tcode{\placeholder{INVOKE}(value, std::forward<Args>(args)...)}.
+
+\pnum
+\constraints
+\tcode{\placeholder{call-expr}} is a valid expression.
+
+\pnum
+\effects
+Equivalent to: \tcode{return \placeholder{call-expr};}
+
+\pnum
+\remarks
+The exception specification is equivalent to \tcode{noexcept(\placeholder{call-expr})}.
+\end{itemdescr}
+
+\indexlibrarymember{operator[]}{constant_wrapper}%
+\begin{itemdecl}
+template<class... Args>
+  static constexpr decltype(auto) operator[](Args&&... args) noexcept(@\seebelow@);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+Let \tcode{\placeholder{subscr-expr}} be
+\tcode{constant_wrapper<value[remove_cvref_t<Args>::value...]>\{\}}
+if all types in \tcode{remove_cvref_t<Args>...} satisfy \exposconcept{constexpr-param} and
+\tcode{constant_wrapper<value[remove_cv\-ref_t<Args>::value...]>} is a valid type,
+otherwise let \tcode{\placeholder{subscr-expr}} be \tcode{value[std::forward<Args\brk{}>(args)...]}.
+
+\pnum
+\constraints
+\tcode{\placeholder{subscr-expr}} is a valid expression.
+
+\pnum
+\effects
+Equivalent to: \tcode{return \placeholder{subscr-expr};}
+
+\pnum
+\remarks
+The exception specification is equivalent to \tcode{noexcept(\placeholder{subscr-expr})}.
 \end{itemdescr}
 
 \rSec1[pairs]{Pairs}
@@ -1524,8 +1800,8 @@ Subclause~\ref{tuple} describes the tuple library that provides a tuple type as
 the class template \tcode{tuple} that can be instantiated with any number
 of arguments. Each template argument specifies
 the type of an element in the \tcode{tuple}.  Consequently, tuples are
-heterogeneous, fixed-size collections of values. An instantiation of \tcode{tuple} with
-two arguments is similar to an instantiation of \tcode{pair} with the same two arguments.
+heterogeneous, fixed-size collections of values. A specialization of \tcode{tuple} with
+two arguments behaves similarly to a specialization of \tcode{pair} with the same two arguments.
 See~\ref{pairs}.
 
 \pnum
@@ -2160,7 +2436,8 @@ the \oldconcept{Allocator} requirements\iref{allocator.requirements.general}.
 
 \pnum
 \effects
-Equivalent to the preceding constructors except that each element is constructed with
+Equivalent to the preceding constructors
+except that each element of non-reference type is constructed with
 uses-allocator construction\iref{allocator.uses.construction}.
 \end{itemdescr}
 
@@ -3274,7 +3551,7 @@ namespace std {
   template<class T, class U> constexpr bool operator>=(const optional<T>&, const U&);
   template<class T, class U> constexpr bool operator>=(const T&, const optional<U>&);
   template<class T, class U>
-      requires (!@\exposconcept{is-derived-from-optional}@<U>) && @\libconcept{three_way_comparable_with}@<T, U>
+    requires (!@\exposconcept{is-derived-from-optional}@<U>) && @\libconcept{three_way_comparable_with}@<T, U>
     constexpr compare_three_way_result_t<T, U>
       operator<=>(const optional<T>&, const U&);
 
@@ -3966,7 +4243,7 @@ template<class... Args> constexpr T& emplace(Args&&... args);
 
 \begin{itemdescr}
 \pnum
-\mandates
+\constraints
 \tcode{is_constructible_v<T, Args...>} is \tcode{true}.
 
 \pnum
@@ -4492,7 +4769,6 @@ namespace std {
     using iterator   = @\impdefnc@;  // present only if \tcode{T} is an object type other than an array
                                                 // of unknown bound; see~\ref{optional.ref.iterators}
 
-  public:
     // \ref{optional.ref.ctor}, constructors
     constexpr optional() noexcept = default;
     constexpr optional(nullopt_t) noexcept : optional() {}
@@ -5071,7 +5347,11 @@ In particular, \tcode{optional<T>} has a constructor with \tcode{nullopt_t} as a
 this indicates that an optional object not containing a value shall be constructed.
 
 \pnum
-Type \tcode{nullopt_t} shall not have a default constructor or an initializer-list constructor, and shall not be an aggregate.
+Type \tcode{nullopt_t} does not have
+a default constructor or an initializer-list constructor, and
+is not an aggregate.
+\tcode{nullopt_t} models \libconcept{copyable} and
+\tcode{\libconcept{three_way_comparable}<strong_ordering>}.
 
 \rSec2[optional.bad.access]{Class \tcode{bad_optional_access}}
 
@@ -5563,7 +5843,7 @@ return true;
 \indexlibrarymember{operator<=>}{optional}%
 \begin{itemdecl}
 template<class T, class U>
-    requires (!@\exposconcept{is-derived-from-optional}@<U>) && @\libconcept{three_way_comparable_with}@<T, U>
+  requires (!@\exposconcept{is-derived-from-optional}@<U>) && @\libconcept{three_way_comparable_with}@<T, U>
   constexpr compare_three_way_result_t<T, U>
     operator<=>(const optional<T>& x, const U& v);
 \end{itemdecl}
@@ -5925,7 +6205,8 @@ Otherwise, initializes the \tcode{variant} to not hold a value.
 
 \pnum
 \throws
-Any exception thrown by direct-initializing any $\tcode{T}_i$ for all $i$.
+Any exception thrown by
+the initialization of the contained value.
 
 \pnum
 \remarks
@@ -5956,7 +6237,8 @@ Otherwise, initializes the \tcode{variant} to not hold a value.
 
 \pnum
 \throws
-Any exception thrown by move-constructing any $\tcode{T}_i$ for all $i$.
+Any exception thrown by
+the initialization of the contained value.
 
 \pnum
 \remarks
@@ -6024,7 +6306,8 @@ direct-non-list-initializes the contained value with \tcode{std::forward<T>(t)}.
 
 \pnum
 \throws
-Any exception thrown by the initialization of the selected alternative $\tcode{T}_j$.
+Any exception thrown by
+the initialization of the contained value.
 
 \pnum
 \remarks
@@ -6058,7 +6341,8 @@ with \tcode{std::forward<Args>(args)...}.
 
 \pnum
 \throws
-Any exception thrown by calling the selected constructor of \tcode{T}.
+Any exception thrown by
+the initialization of the contained value.
 
 \pnum
 \remarks
@@ -6091,7 +6375,8 @@ with \tcode{il, std::forward<Args>(\brk{}args)...}.
 
 \pnum
 \throws
-Any exception thrown by calling the selected constructor of \tcode{T}.
+Any exception thrown by
+the initialization of the contained value.
 
 \pnum
 \remarks
@@ -6125,7 +6410,8 @@ with \tcode{std::forward<Args>(args)...}.
 
 \pnum
 \throws
-Any exception thrown by calling the selected constructor of $\tcode{T}_I$.
+Any exception thrown by
+the initialization of the contained value.
 
 \pnum
 \remarks
@@ -6157,6 +6443,11 @@ with \tcode{il, std::forward<Args>(\brk{}args)...}.
 \pnum
 \ensures
 \tcode{index()} is \tcode{I}.
+
+\pnum
+\throws
+Any exception thrown by
+the initialization of the contained value.
 
 \pnum
 \remarks
@@ -8207,6 +8498,7 @@ namespace std {
     constexpr T&& operator*() && noexcept;
     constexpr explicit operator bool() const noexcept;
     constexpr bool has_value() const noexcept;
+    constexpr bool has_error() const noexcept;
     constexpr const T& value() const &;                                     // freestanding-deleted
     constexpr T& value() &;                                                 // freestanding-deleted
     constexpr const T&& value() const &&;                                   // freestanding-deleted
@@ -8247,10 +8539,10 @@ namespace std {
       friend constexpr bool operator==(const expected&, const unexpected<E2>&);
 
   private:
-    bool @\exposid{has_val}@;       // \expos
+    bool @\exposid{has_val}@;           // \expos
     union {
-      T @\exposid{val}@;            // \expos
-      E @\exposid{unex}@;           // \expos
+      remove_cv_t<T> @\exposid{val}@;   // \expos
+      E @\exposid{unex}@;               // \expos
     };
   };
 }
@@ -8725,6 +9017,17 @@ This operator is defined as deleted unless:
 \tcode{is_nothrow_move_constructible_v<T> || is_nothrow_move_constructible_v<E>}
 is \tcode{true}.
 \end{itemize}
+
+\pnum
+This operator is trivial if:
+\begin{itemize}
+\item \tcode{is_trivially_copy_constructible_v<T>} is \tcode{true}, and
+\item \tcode{is_trivially_copy_assignable_v<T>} is \tcode{true}, and
+\item \tcode{is_trivially_destructible_v<T>} is \tcode{true}, and
+\item \tcode{is_trivially_copy_constructible_v<E>} is \tcode{true}, and
+\item \tcode{is_trivially_copy_assignable_v<E>} is \tcode{true}, and
+\item \tcode{is_trivially_destructible_v<E>} is \tcode{true}.
+\end{itemize}
 \end{itemdescr}
 
 \indexlibrarymember{operator=}{expected}%
@@ -8782,6 +9085,17 @@ The exception specification is equivalent to:
 is_nothrow_move_assignable_v<T> && is_nothrow_move_constructible_v<T> &&
 is_nothrow_move_assignable_v<E> && is_nothrow_move_constructible_v<E>
 \end{codeblock}
+
+\pnum
+This operator is trivial if:
+\begin{itemize}
+\item \tcode{is_trivially_move_constructible_v<T>} is \tcode{true}, and
+\item \tcode{is_trivially_move_assignable_v<T>} is \tcode{true}, and
+\item \tcode{is_trivially_destructible_v<T>} is \tcode{true}, and
+\item \tcode{is_trivially_move_constructible_v<E>} is \tcode{true}, and
+\item \tcode{is_trivially_move_assignable_v<E>} is \tcode{true}, and
+\item \tcode{is_trivially_destructible_v<E>} is \tcode{true}.
+\end{itemize}
 \end{itemdescr}
 
 \indexlibrarymember{operator=}{expected}%
@@ -8976,7 +9290,7 @@ if constexpr (is_nothrow_move_constructible_v<E>) {
     throw;
   }
 } else {
-  T tmp(std::move(@\exposid{val}@));
+  remove_cv_t<T> tmp(std::move(@\exposid{val}@));
   destroy_at(addressof(@\exposid{val}@));
   try {
     construct_at(addressof(@\exposid{unex}@), std::move(rhs.@\exposid{unex}@));
@@ -9076,6 +9390,18 @@ constexpr bool has_value() const noexcept;
 \pnum
 \returns
 \exposid{has_val}.
+\end{itemdescr}
+
+\indexlibrarymember{has_error}{expected}%
+\begin{itemdecl}
+constexpr bool has_error() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\effects
+Equivalent to:
+\tcode{return !has_value();}
 \end{itemdescr}
 
 \indexlibrarymember{value}{expected}%
@@ -9545,7 +9871,7 @@ its result is convertible to \tcode{bool}.
 
 \pnum
 \returns
-If \tcode{x.has_value()} is \tcode{true},
+If \tcode{!x.has_value()} is \tcode{true},
 \tcode{x.error() == e.error()};
 otherwise \tcode{false}.
 \end{itemdescr}
@@ -9555,96 +9881,98 @@ otherwise \tcode{false}.
 \rSec3[expected.void.general]{General}
 
 \begin{codeblock}
-template<class T, class E> requires is_void_v<T>
-class expected<T, E> {
-public:
-  using @\libmember{value_type}{expected<void>}@ = T;
-  using @\libmember{error_type}{expected<void>}@ = E;
-  using @\libmember{unexpected_type}{expected<void>}@ = unexpected<E>;
+namespace std {
+  template<class T, class E> requires is_void_v<T>
+  class expected<T, E> {
+  public:
+    using @\libmember{value_type}{expected<void>}@ = T;
+    using @\libmember{error_type}{expected<void>}@ = E;
+    using @\libmember{unexpected_type}{expected<void>}@ = unexpected<E>;
 
-  template<class U>
-  using @\libmember{rebind}{expected<void>}@ = expected<U, error_type>;
+    template<class U>
+    using @\libmember{rebind}{expected<void>}@ = expected<U, error_type>;
 
-  // \ref{expected.void.cons}, constructors
-  constexpr expected() noexcept;
-  constexpr expected(const expected&);
-  constexpr expected(expected&&) noexcept(@\seebelow@);
-  template<class U, class G>
-    constexpr explicit(@\seebelow@) expected(const expected<U, G>&);
-  template<class U, class G>
-    constexpr explicit(@\seebelow@) expected(expected<U, G>&&);
+    // \ref{expected.void.cons}, constructors
+    constexpr expected() noexcept;
+    constexpr expected(const expected&);
+    constexpr expected(expected&&) noexcept(@\seebelow@);
+    template<class U, class G>
+      constexpr explicit(@\seebelow@) expected(const expected<U, G>&);
+    template<class U, class G>
+      constexpr explicit(@\seebelow@) expected(expected<U, G>&&);
 
-  template<class G>
-    constexpr explicit(@\seebelow@) expected(const unexpected<G>&);
-  template<class G>
-    constexpr explicit(@\seebelow@) expected(unexpected<G>&&);
+    template<class G>
+      constexpr explicit(@\seebelow@) expected(const unexpected<G>&);
+    template<class G>
+      constexpr explicit(@\seebelow@) expected(unexpected<G>&&);
 
-  constexpr explicit expected(in_place_t) noexcept;
-  template<class... Args>
-    constexpr explicit expected(unexpect_t, Args&&...);
-  template<class U, class... Args>
-    constexpr explicit expected(unexpect_t, initializer_list<U>, Args&&...);
+    constexpr explicit expected(in_place_t) noexcept;
+    template<class... Args>
+      constexpr explicit expected(unexpect_t, Args&&...);
+    template<class U, class... Args>
+      constexpr explicit expected(unexpect_t, initializer_list<U>, Args&&...);
 
+    // \ref{expected.void.dtor}, destructor
+    constexpr ~expected();
 
-  // \ref{expected.void.dtor}, destructor
-  constexpr ~expected();
+    // \ref{expected.void.assign}, assignment
+    constexpr expected& operator=(const expected&);
+    constexpr expected& operator=(expected&&) noexcept(@\seebelow@);
+    template<class G>
+      constexpr expected& operator=(const unexpected<G>&);
+    template<class G>
+      constexpr expected& operator=(unexpected<G>&&);
+    constexpr void emplace() noexcept;
 
-  // \ref{expected.void.assign}, assignment
-  constexpr expected& operator=(const expected&);
-  constexpr expected& operator=(expected&&) noexcept(@\seebelow@);
-  template<class G>
-    constexpr expected& operator=(const unexpected<G>&);
-  template<class G>
-    constexpr expected& operator=(unexpected<G>&&);
-  constexpr void emplace() noexcept;
+    // \ref{expected.void.swap}, swap
+    constexpr void swap(expected&) noexcept(@\seebelow@);
+    friend constexpr void swap(expected& x, expected& y) noexcept(noexcept(x.swap(y)));
 
-  // \ref{expected.void.swap}, swap
-  constexpr void swap(expected&) noexcept(@\seebelow@);
-  friend constexpr void swap(expected& x, expected& y) noexcept(noexcept(x.swap(y)));
+    // \ref{expected.void.obs}, observers
+    constexpr explicit operator bool() const noexcept;
+    constexpr bool has_value() const noexcept;
+    constexpr bool has_error() const noexcept;
+    constexpr void operator*() const noexcept;
+    constexpr void value() const &;                                         // freestanding-deleted
+    constexpr void value() &&;                                              // freestanding-deleted
+    constexpr const E& error() const & noexcept;
+    constexpr E& error() & noexcept;
+    constexpr const E&& error() const && noexcept;
+    constexpr E&& error() && noexcept;
+    template<class G = E> constexpr E error_or(G&&) const &;
+    template<class G = E> constexpr E error_or(G&&) &&;
 
-  // \ref{expected.void.obs}, observers
-  constexpr explicit operator bool() const noexcept;
-  constexpr bool has_value() const noexcept;
-  constexpr void operator*() const noexcept;
-  constexpr void value() const &;                                           // freestanding-deleted
-  constexpr void value() &&;                                                // freestanding-deleted
-  constexpr const E& error() const & noexcept;
-  constexpr E& error() & noexcept;
-  constexpr const E&& error() const && noexcept;
-  constexpr E&& error() && noexcept;
-  template<class G = E> constexpr E error_or(G&&) const &;
-  template<class G = E> constexpr E error_or(G&&) &&;
+    // \ref{expected.void.monadic}, monadic operations
+    template<class F> constexpr auto and_then(F&& f) &;
+    template<class F> constexpr auto and_then(F&& f) &&;
+    template<class F> constexpr auto and_then(F&& f) const &;
+    template<class F> constexpr auto and_then(F&& f) const &&;
+    template<class F> constexpr auto or_else(F&& f) &;
+    template<class F> constexpr auto or_else(F&& f) &&;
+    template<class F> constexpr auto or_else(F&& f) const &;
+    template<class F> constexpr auto or_else(F&& f) const &&;
+    template<class F> constexpr auto transform(F&& f) &;
+    template<class F> constexpr auto transform(F&& f) &&;
+    template<class F> constexpr auto transform(F&& f) const &;
+    template<class F> constexpr auto transform(F&& f) const &&;
+    template<class F> constexpr auto transform_error(F&& f) &;
+    template<class F> constexpr auto transform_error(F&& f) &&;
+    template<class F> constexpr auto transform_error(F&& f) const &;
+    template<class F> constexpr auto transform_error(F&& f) const &&;
 
-  // \ref{expected.void.monadic}, monadic operations
-  template<class F> constexpr auto and_then(F&& f) &;
-  template<class F> constexpr auto and_then(F&& f) &&;
-  template<class F> constexpr auto and_then(F&& f) const &;
-  template<class F> constexpr auto and_then(F&& f) const &&;
-  template<class F> constexpr auto or_else(F&& f) &;
-  template<class F> constexpr auto or_else(F&& f) &&;
-  template<class F> constexpr auto or_else(F&& f) const &;
-  template<class F> constexpr auto or_else(F&& f) const &&;
-  template<class F> constexpr auto transform(F&& f) &;
-  template<class F> constexpr auto transform(F&& f) &&;
-  template<class F> constexpr auto transform(F&& f) const &;
-  template<class F> constexpr auto transform(F&& f) const &&;
-  template<class F> constexpr auto transform_error(F&& f) &;
-  template<class F> constexpr auto transform_error(F&& f) &&;
-  template<class F> constexpr auto transform_error(F&& f) const &;
-  template<class F> constexpr auto transform_error(F&& f) const &&;
+    // \ref{expected.void.eq}, equality operators
+    template<class T2, class E2> requires is_void_v<T2>
+      friend constexpr bool operator==(const expected& x, const expected<T2, E2>& y);
+    template<class E2>
+      friend constexpr bool operator==(const expected&, const unexpected<E2>&);
 
-  // \ref{expected.void.eq}, equality operators
-  template<class T2, class E2> requires is_void_v<T2>
-    friend constexpr bool operator==(const expected& x, const expected<T2, E2>& y);
-  template<class E2>
-    friend constexpr bool operator==(const expected&, const unexpected<E2>&);
-
-private:
-  bool @\exposid{has_val}@;         // \expos
-  union {
-    E @\exposid{unex}@;             // \expos
+  private:
+    bool @\exposid{has_val}@;       // \expos
+    union {
+      E @\exposid{unex}@;           // \expos
+    };
   };
-};
+}
 \end{codeblock}
 
 \pnum
@@ -9929,6 +10257,13 @@ Otherwise, equivalent to \tcode{\exposid{unex} = rhs.error()}.
 This operator is defined as deleted unless
 \tcode{is_copy_assignable_v<E>} is \tcode{true} and
 \tcode{is_copy_constructible_v<E>} is \tcode{true}.
+
+\pnum
+This operator is trivial if
+\tcode{is_trivially_copy_constructible_v<E>},
+\tcode{is_trivially_copy_assigna\-ble_v<E>}, and
+\tcode{is_trivially_destructible_v<E>}
+are all \tcode{true}.
 \end{itemdescr}
 
 \indexlibrarymember{operator=}{expected<void>}%
@@ -9968,6 +10303,13 @@ Otherwise, equivalent to \tcode{\exposid{unex} = std::move(rhs.error())}.
 \remarks
 The exception specification is equivalent to
 \tcode{is_nothrow_move_constructible_v<E> \&\& is_nothrow_move_assignable_v<E>}.
+
+\pnum
+This operator is trivial if
+\tcode{is_trivially_move_constructible_v<E>},
+\tcode{is_trivially_move_assigna\-ble_v<E>}, and
+\tcode{is_trivially_destructible_v<E>}
+are all \tcode{true}.
 \end{itemdescr}
 
 \indexlibrarymember{operator=}{expected<void>}%
@@ -10091,6 +10433,18 @@ constexpr bool has_value() const noexcept;
 \pnum
 \returns
 \exposid{has_val}.
+\end{itemdescr}
+
+\indexlibrarymember{has_error}{expected<void>}%
+\begin{itemdecl}
+constexpr bool has_error() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\effects
+Equivalent to:
+\tcode{return !has_value();}
 \end{itemdescr}
 
 \indexlibrarymember{operator*}{expected<void>}%
@@ -10542,7 +10896,7 @@ namespace std {
       constexpr reference& operator=(const reference& x) noexcept;  // for \tcode{b[i] = b[j];}
       constexpr const reference& operator=(bool x) const noexcept;
       constexpr operator bool() const noexcept;                     // for \tcode{x = b[i];}
-      constexpr bool operator~() const noexcept;                    // flips the bit
+      constexpr bool operator~() const noexcept;
       constexpr reference& flip() noexcept;                         // for \tcode{b[i].flip();}
 
       friend constexpr void swap(reference x, reference y) noexcept;
@@ -10685,6 +11039,29 @@ and clears it otherwise.
 \pnum
 \returns
 \tcode{*this}.
+\end{itemdescr}
+
+\indexlibrarymember{operator bool}{bitset::reference}%
+\begin{itemdecl}
+constexpr reference::operator bool() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+\tcode{true} if the value of the bit referred to by \tcode{*this} is one,
+\tcode{false} otherwise.
+\end{itemdescr}
+
+\indexlibrarymember{operator\~{}}{bitset::reference}%
+\begin{itemdecl}
+constexpr bool reference::operator~() const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns
+\tcode{!bool(*this)}.
 \end{itemdescr}
 
 \indexlibrarymember{swap}{bitset::reference}%
@@ -11714,19 +12091,20 @@ A \defnadj{callable}{type} is a function object type\iref{function.objects} or a
 A \defnadj{callable}{object} is an object of a callable type.
 
 \pnum
-A \defnx{call wrapper type}{call wrapper!type} is a type that holds a callable object
-and supports a call operation that forwards to that object.
+A \defnx{call wrapper type}{call wrapper!type} is a type that holds
+a \defnadj{target}{object},
+which is either
+a callable object or
+an object representing a callable object,
+and supports a call operation that forwards to that callable object.
 
 \pnum
 A \defn{call wrapper} is an object of a call wrapper type.
 
 \pnum
-A \defn{target object} is the callable object held by a call wrapper.
-
-\pnum
 A call wrapper type may additionally hold
 a sequence of objects and references
-that may be passed as arguments to the target object.
+that may be passed as arguments to the callable object.
 These entities are collectively referred to
 as \defnx{bound argument entities}{bound argument entity}.
 
@@ -12271,7 +12649,7 @@ template<> struct plus<void> {
 \indexlibrarymember{operator()}{plus<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) + std::forward<U>(u));
+  -> decltype(std::forward<T>(t) + std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12313,7 +12691,7 @@ template<> struct minus<void> {
 \indexlibrarymember{operator()}{minus<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) - std::forward<U>(u));
+  -> decltype(std::forward<T>(t) - std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12355,7 +12733,7 @@ template<> struct multiplies<void> {
 \indexlibrarymember{operator()}{multiplies<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) * std::forward<U>(u));
+  -> decltype(std::forward<T>(t) * std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12397,7 +12775,7 @@ template<> struct divides<void> {
 \indexlibrarymember{operator()}{divides<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) / std::forward<U>(u));
+  -> decltype(std::forward<T>(t) / std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12439,7 +12817,7 @@ template<> struct modulus<void> {
 \indexlibrarymember{operator()}{modulus<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) % std::forward<U>(u));
+  -> decltype(std::forward<T>(t) % std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12481,7 +12859,7 @@ template<> struct negate<void> {
 \indexlibrarymember{operator()}{negate<>}%
 \begin{itemdecl}
 template<class T> constexpr auto operator()(T&& t) const
-    -> decltype(-std::forward<T>(t));
+  -> decltype(-std::forward<T>(t));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12549,7 +12927,7 @@ template<> struct equal_to<void> {
 \indexlibrarymember{operator()}{equal_to<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) == std::forward<U>(u));
+  -> decltype(std::forward<T>(t) == std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12591,7 +12969,7 @@ template<> struct not_equal_to<void> {
 \indexlibrarymember{operator()}{not_equal_to<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) != std::forward<U>(u));
+  -> decltype(std::forward<T>(t) != std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12633,7 +13011,7 @@ template<> struct greater<void> {
 \indexlibrarymember{operator()}{greater<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) > std::forward<U>(u));
+  -> decltype(std::forward<T>(t) > std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12675,7 +13053,7 @@ template<> struct less<void> {
 \indexlibrarymember{operator()}{less<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) < std::forward<U>(u));
+  -> decltype(std::forward<T>(t) < std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12717,7 +13095,7 @@ template<> struct greater_equal<void> {
 \indexlibrarymember{operator()}{greater_equal<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) >= std::forward<U>(u));
+  -> decltype(std::forward<T>(t) >= std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -12759,7 +13137,7 @@ template<> struct less_equal<void> {
 \indexlibrarymember{operator()}{less_equal<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) <= std::forward<U>(u));
+  -> decltype(std::forward<T>(t) <= std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13068,7 +13446,7 @@ template<> struct logical_and<void> {
 \indexlibrarymember{operator()}{logical_and<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) && std::forward<U>(u));
+  -> decltype(std::forward<T>(t) && std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13110,7 +13488,7 @@ template<> struct logical_or<void> {
 \indexlibrarymember{operator()}{logical_or<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) || std::forward<U>(u));
+  -> decltype(std::forward<T>(t) || std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13152,7 +13530,7 @@ template<> struct logical_not<void> {
 \indexlibrarymember{operator()}{logical_not<>}%
 \begin{itemdecl}
 template<class T> constexpr auto operator()(T&& t) const
-    -> decltype(!std::forward<T>(t));
+  -> decltype(!std::forward<T>(t));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13203,7 +13581,7 @@ template<> struct bit_and<void> {
 \indexlibrarymember{operator()}{bit_and<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) & std::forward<U>(u));
+  -> decltype(std::forward<T>(t) & std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13245,7 +13623,7 @@ template<> struct bit_or<void> {
 \indexlibrarymember{operator()}{bit_or<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) | std::forward<U>(u));
+  -> decltype(std::forward<T>(t) | std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13287,7 +13665,7 @@ template<> struct bit_xor<void> {
 \indexlibrarymember{operator()}{bit_xor<>}%
 \begin{itemdecl}
 template<class T, class U> constexpr auto operator()(T&& t, U&& u) const
-    -> decltype(std::forward<T>(t) ^ std::forward<U>(u));
+  -> decltype(std::forward<T>(t) ^ std::forward<U>(u));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13328,7 +13706,7 @@ template<> struct bit_not<void> {
 \indexlibrarymember{operator()}{bit_not<>}%
 \begin{itemdecl}
 template<class T> constexpr auto operator()(T&& t) const
-    -> decltype(~std::forward<T>(t));
+  -> decltype(~std::forward<T>(t));
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13424,9 +13802,9 @@ then \tcode{f != nullptr} is \tcode{true}.
 
 \pnum
 \returns
-A perfect forwarding call wrapper\iref{func.require} \tcode{g} that
-does not have state entities, and
-has the call pattern \tcode{!invoke(f, call_args...)}.
+A perfect forwarding call wrapper\iref{func.require} \tcode{g}
+whose target object is a copy of \tcode{cw<f>}, and
+whose call pattern is \tcode{!invoke(f, call_args...)}.
 \end{itemdescr}
 
 \rSec2[func.bind.partial]{Function templates \tcode{bind_front} and \tcode{bind_back}}
@@ -13546,8 +13924,9 @@ $\tcode{T}_i$ meets the \oldconcept{MoveConstructible} requirements.
 
 \pnum
 \returns
-A perfect forwarding call wrapper\iref{func.require} \tcode{g} that
-does not have a target object, and has the call pattern:
+A perfect forwarding call wrapper\iref{func.require} \tcode{g}
+whose target object is a copy of \tcode{cw<f>}, and
+whose call pattern is:
 \begin{itemize}
 \item
 \tcode{invoke(f, bound_args..., call_args...)}
@@ -13835,10 +14214,12 @@ encapsulate arbitrary callable objects.
 
 \pnum
 Let \tcode{t} be an object of a type that is a specialization of
-\tcode{function}, \tcode{copyable_function}, or \tcode{move_only_function},
+\tcode{function}, \tcode{copyable_function}, \tcode{move_only_function},
+or \tcode{function_ref},
 such that the target object \tcode{x} of \tcode{t} has a type that
 is a specialization of
-\tcode{function}, \tcode{copyable_function}, or \tcode{move_only_function}.
+\tcode{function}, \tcode{copyable_function}, \tcode{move_only_function},
+or \tcode{function_ref}.
 Each argument of the
 invocation of \tcode{x} evaluated as part of the invocation of \tcode{t}
 may alias an argument in the same position in the invocation of \tcode{t} that
@@ -15178,9 +15559,11 @@ namespace std {
     // \ref{func.wrap.ref.ctor}, constructors and assignment operators
     template<class F> function_ref(F*) noexcept;
     template<class F> constexpr function_ref(F&&) noexcept;
-    template<auto f> constexpr function_ref(constant_arg_t<f>) noexcept;
-    template<auto f, class U> constexpr function_ref(constant_arg_t<f>, U&&) noexcept;
-    template<auto f, class T> constexpr function_ref(constant_arg_t<f>, @\cv{}@ T*) noexcept;
+    template<auto c, class F> constexpr function_ref(constant_wrapper<c, F>) noexcept;
+    template<auto c, class F, class U>
+      constexpr function_ref(constant_wrapper<c, F>, U&&) noexcept;
+    template<auto c, class F, class T>
+      constexpr function_ref(constant_wrapper<c, F>, @\cv{}@ T*) noexcept;
 
     constexpr function_ref(const function_ref&) noexcept = default;
     constexpr function_ref& operator=(const function_ref&) noexcept = default;
@@ -15200,10 +15583,10 @@ namespace std {
   // \ref{func.wrap.ref.deduct}, deduction guides
   template<class F>
     function_ref(F*) -> function_ref<F>;
-  template<auto f>
-    function_ref(constant_arg_t<f>) -> function_ref<@\seebelow@>;
-  template<auto f, class T>
-    function_ref(constant_arg_t<f>, T&&) -> function_ref<@\seebelow@>;
+  template<auto c, class F0>
+    function_ref(constant_wrapper<c, F0>) -> function_ref<@\seebelow@>;
+  template<auto c, class F, class T>
+    function_ref(constant_wrapper<c, F>, T&&) -> function_ref<@\seebelow@>;
 }
 \end{codeblock}
 
@@ -15253,6 +15636,25 @@ is_invocable_r_v<R, T..., ArgTypes...>
 \end{codeblock}
 \end{itemdescr}
 
+\indextext{function_ref::is-convertible-from-specialization@\tcode{function_ref::\exposid{is-convertible-from-\brk{}specialization}}}%
+\begin{itemdecl}
+template<class F>
+  static constexpr bool @\exposid{is-convertible-from-specialization}@ = @\seebelow@;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+If \tcode{F} denotes a specialization
+\tcode{function_ref<R(Args...) \cvqual{cv2} noexcept(\placeholder{noex2})>}
+for some placeholders \cvqual{cv2} and \placeholder{noex2},
+\tcode{\exposid{is-convertible-from-specialization}<F>} is equal to:
+\begin{codeblock}
+is_convertible_v<R(&)(Args...) noexcept(@\placeholder{noex2}@), R(&)(Args...) noexcept(@\placeholder{noex}@)> &&
+is_convertible_v<int @\cv{}@&, int @\cvqual{cv2}@&>.
+\end{codeblock}
+Otherwise, \tcode{\exposid{is-convertible-from-specialization}<F>} is \tcode{false}.
+\end{itemdescr}
+
 \indexlibraryctor{function_ref}%
 \begin{itemdecl}
 template<class F> function_ref(F* f) noexcept;
@@ -15300,32 +15702,62 @@ Let \tcode{T} be \tcode{remove_reference_t<F>}.
 
 \pnum
 \effects
-Initializes
-\exposid{bound-entity} with \tcode{addressof(f)}, and
+If \tcode{\exposid{is-convertible-from-specialization}<remove_cv_t<T>>}
+is \tcode{false},
+initializes
+\exposid{bound-en\-tity} with \tcode{addressof(f)}, and
 \exposid{thunk-ptr} with the address of a function \tcode{\placeholder{thunk}}
 such that
-\tcode{\placeholder{thunk}(\exposid{bound-entity}, \placeholder{call-args}...)}
+\tcode{\placeholder{thunk}(\exposid{bound-\brk{}entity}, \placeholder{call-args}...)}
 is expression-equivalent\iref{defns.expression.equivalent} to
 \tcode{invoke_r<R>(static_cast<\cv{} T\&>(f), \placeholder{call-args}...)}.
+Otherwise, initializes \exposid{bound-entity}
+with the value of \tcode{f.\exposid{bound-entity}} and
+\exposid{thunk-\brk{}ptr} with the value of \tcode{f.\exposid{thunk-ptr}}.
+
+\pnum
+\remarks
+If \tcode{remove_cvref_t<F>} is a specialization of \tcode{function_ref},
+an implementation may initialize \exposid{bound-entity}
+with the value of \tcode{f.\exposid{bound-entity}} and \exposid{thunk-ptr}
+with the value of \tcode{f.\exposid{thunk-ptr}}.
+\begin{example}
+\begin{codeblock}
+void f1(std::string);
+void f2(std::string);
+
+function_ref<void(std::string)> r1(&f1);
+function_ref<void(std::string&&)> r2(r1);
+r2("");                 // \tcode{f1} is invoked
+r1 = &f2;
+r2("");                 // it is unspecified if \tcode{f1} or \tcode{f2} is invoked
+\end{codeblock}
+\end{example}
 \end{itemdescr}
 
 \indexlibraryctor{function_ref}%
 \begin{itemdecl}
-template<auto f> constexpr function_ref(constant_arg_t<f>) noexcept;
+template<auto c, class F> constexpr function_ref(constant_wrapper<c, F> f) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
-\pnum
-Let \tcode{F} be \tcode{decltype(f)}.
-
 \pnum
 \constraints
 \tcode{\exposid{is-invocable-using}<const F\&>} is \tcode{true}.
 
 \pnum
 \mandates
+\begin{itemize}
+\item
 If \tcode{is_pointer_v<F> || is_member_pointer_v<F>} is \tcode{true},
-then \tcode{f != nullptr} is \tcode{true}.
+then \tcode{f.value != nullptr} is \tcode{true}, and
+\item
+if \tcode{ArgTypes} is not an empty pack and
+all types in \tcode{remove_cvref_t<ArgTypes>...}
+satisfy \exposconcept{constexpr-param} then
+\tcode{constant_wrapper<\placeholdernc{INVOKE}(f.value, remove_cvref_t<ArgTypes>::\newline value...)>}
+is not a valid type.
+\end{itemize}
 
 \pnum
 \effects
@@ -15336,19 +15768,18 @@ null pointer value, and
 such that
 \tcode{\placeholder{thunk}(\exposid{bound-entity}, \placeholder{call-args}...)}
 is expression-equivalent\iref{defns.expression.equivalent} to
-\tcode{invoke_r<R>(f, \placeholder{call-args}...)}.
+\tcode{invoke_r<R>(f.value, \placeholder{call-args}...)}.
 \end{itemdescr}
 
 \indexlibraryctor{function_ref}%
 \begin{itemdecl}
-template<auto f, class U>
-  constexpr function_ref(constant_arg_t<f>, U&& obj) noexcept;
+template<auto c, class F, class U>
+  constexpr function_ref(constant_wrapper<c, F> f, U&& obj) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
-Let \tcode{T} be \tcode{remove_reference_t<U>} and
-\tcode{F} be \tcode{decltype(f)}.
+Let \tcode{T} be \tcode{remove_reference_t<U>}.
 
 \pnum
 \constraints
@@ -15360,7 +15791,7 @@ Let \tcode{T} be \tcode{remove_reference_t<U>} and
 \pnum
 \mandates
 If \tcode{is_pointer_v<F> || is_member_pointer_v<F>} is \tcode{true},
-then \tcode{f != nullptr} is \tcode{true}.
+then \tcode{f.value != nullptr} is \tcode{true}.
 
 \pnum
 \effects
@@ -15370,19 +15801,16 @@ Initializes
 such that
 \tcode{\placeholder{thunk}(\exposid{bound-entity}, \placeholder{call-args}...)}
 is expression-equivalent\iref{defns.expression.equivalent} to
-\tcode{invoke_r<R>(f, static_cast<\cv{} T\&>(obj), \placeholder{call-args}...)}.
+\tcode{invoke_r<R>(f.value, static_cast<\cv{} T\&>(obj), \placeholder{call-args}...)}.
 \end{itemdescr}
 
 \indexlibraryctor{function_ref}%
 \begin{itemdecl}
-template<auto f, class T>
-  constexpr function_ref(constant_arg_t<f>, @\cv{}@ T* obj) noexcept;
+template<auto c, class F, class T>
+  constexpr function_ref(constant_wrapper<c, F> f, @\cv{}@ T* obj) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
-\pnum
-Let \tcode{F} be \tcode{decltype(f)}.
-
 \pnum
 \constraints
 \tcode{\exposid{is-invocable-using}<const F\&, \cv{} T*>} is \tcode{true}.
@@ -15390,7 +15818,7 @@ Let \tcode{F} be \tcode{decltype(f)}.
 \pnum
 \mandates
 If \tcode{is_pointer_v<F> || is_member_pointer_v<F>} is \tcode{true},
-then \tcode{f != nullptr} is \tcode{true}.
+then \tcode{f.value != nullptr} is \tcode{true}.
 
 \pnum
 \expects
@@ -15405,7 +15833,7 @@ Initializes
 such that
 \tcode{\placeholder{thunk}(\exposid{bound-entity}, \placeholder{call-args}...)}
 is expression-equivalent\iref{defns.expression.equivalent} to
-\tcode{invoke_r<R>(f, obj, \placeholder{call-args}...)}.
+\tcode{invoke_r<R>(f.value, obj, \placeholder{call-args}...)}.
 \end{itemdescr}
 
 \indexlibrarymember{operator=}{function_ref}%
@@ -15417,9 +15845,9 @@ template<class T> function_ref& operator=(T) = delete;
 \pnum
 \constraints
 \begin{itemize}
-\item \tcode{T} is not the same type as \tcode{function_ref},
+\item \tcode{\exposid{is-convertible-from-specialization}<T>} is \tcode{false},
 \item \tcode{is_pointer_v<T>} is \tcode{false}, and
-\item \tcode{T} is not a specialization of \tcode{constant_arg_t}.
+\item \tcode{T} is not a specialization of \tcode{constant_wrapper}.
 \end{itemize}
 \end{itemdescr}
 
@@ -15451,13 +15879,13 @@ template<class F>
 \end{itemdescr}
 
 \begin{itemdecl}
-template<auto f>
-  function_ref(constant_arg_t<f>) -> function_ref<@\seebelow@>;
+template<auto c, class F0>
+  function_ref(constant_wrapper<c, F0>) -> function_ref<@\seebelow@>;
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
-Let \tcode{F} be \tcode{remove_pointer_t<decltype(f)>}.
+Let \tcode{F} be \tcode{remove_pointer_t<F0>}.
 
 \pnum
 \constraints
@@ -15469,14 +15897,11 @@ The deduced type is \tcode{function_ref<F>}.
 \end{itemdescr}
 
 \begin{itemdecl}
-template<auto f, class T>
-  function_ref(constant_arg_t<f>, T&&) -> function_ref<@\seebelow@>;
+template<auto c, class F, class T>
+  function_ref(constant_wrapper<c, F>, T&&) -> function_ref<@\seebelow@>;
 \end{itemdecl}
 
 \begin{itemdescr}
-\pnum
-Let \tcode{F} be \tcode{decltype(f)}.
-
 \pnum
 \constraints
 %FIXME: R and E should be defined outside of these constraints.
@@ -15893,6 +16318,12 @@ namespace std {
   template<class T>
     constexpr int bit_width(T x) noexcept;
 
+  // \ref{bit.shift}, shifting
+  template<class T, class S>
+    constexpr T shl(T x, S s) noexcept;
+  template<class T, class S>
+    constexpr T shr(T x, S s) noexcept;
+
   // \ref{bit.rotate}, rotating
   template<class T>
     constexpr T rotl(T x, int s) noexcept;
@@ -15910,6 +16341,16 @@ namespace std {
     constexpr int countr_one(T x) noexcept;
   template<class T>
     constexpr int popcount(T x) noexcept;
+
+  // \ref{bit.permute}, permutation
+  template<class T>
+    constexpr T bit_reverse(T x) noexcept;
+  template<class T>
+    constexpr T bit_repeat(T x, int l);
+  template<class T>
+    constexpr T bit_compress(T x, T m) noexcept;
+  template<class T>
+    constexpr T bit_expand(T x, T m) noexcept;
 
   // \ref{bit.endian}, endian
   enum class endian {
@@ -15938,20 +16379,9 @@ template<class To, class From>
 \end{itemize}
 
 \pnum
-\mandates
-Neither \tcode{To} nor \tcode{From} are consteval-only types\iref{basic.types.general}.
-
-\pnum
 \constantwhen
-\tcode{To}, \tcode{From}, and the types of all subobjects
-of \tcode{To} and \tcode{From} are types \tcode{T} such that:
-\begin{itemize}
-\item \tcode{is_union_v<T>} is \tcode{false};
-\item \tcode{is_pointer_v<T>} is \tcode{false};
-\item \tcode{is_member_pointer_v<T>} is \tcode{false};
-\item \tcode{is_volatile_v<T>} is \tcode{false}; and
-\item \tcode{T} has no non-static data members of reference type.
-\end{itemize}
+Neither \tcode{To} nor \tcode{From}
+has constexpr-unknown representation\iref{expr.const.core}.
 
 \pnum
 \returns
@@ -15960,10 +16390,11 @@ Implicitly creates objects nested within the result\iref{intro.object}.
 Each bit of the value representation of the result
 is equal to the corresponding bit in the object representation
 of \tcode{from}. Padding bits of the result are unspecified.
-For the result and each object created within it,
-if there is no value of the object's type corresponding to the
-value representation produced, the behavior is undefined.
-If there are multiple such values, which value is produced is unspecified.
+Every trivially copyable object
+among the result and each object created within it
+acquires the value representation produced;
+if any such object does not receive a value,
+the behavior is undefined.
 A bit in the value representation of the result is indeterminate if
 it does not correspond to a bit in the value representation of \tcode{from} or
 corresponds to a bit
@@ -16067,7 +16498,7 @@ Nothing.
 \remarks
 A function call expression
 that violates the precondition in the \expects element
-is not a core constant expression\iref{expr.const}.
+is not a core constant expression\iref{expr.const.core}.
 \end{itemdescr}
 
 \indexlibraryglobal{bit_floor}%
@@ -16106,6 +16537,48 @@ If \tcode{x == 0}, \tcode{0};
 otherwise one plus the base-2 logarithm of \tcode{x},
 with any fractional part discarded.
 
+\end{itemdescr}
+
+\rSec2[bit.shift]{Shifting}
+
+\pnum
+Within this subclause,
+the result $r$ of an arithmetic operation is
+first represented in a hypothetical integer type with sufficient range,
+then converted to \tcode{T} as if by \tcode{static_cast<T>($r$)}.
+
+\indexlibraryglobal{shl}%
+\begin{itemdecl}
+template<class T, class S>
+  constexpr T shl(T x, S s) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+Each of \tcode{T} and \tcode{S}
+is a signed or unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+$x \times 2^s$ rounded towards negative infinity.
+\end{itemdescr}
+
+\indexlibraryglobal{shr}%
+\begin{itemdecl}
+template<class T, class S>
+  constexpr T shr(T x, S s) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+Each of \tcode{T} and \tcode{S}
+is a signed or unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+$x \times 2^{-s}$ rounded towards negative infinity.
 \end{itemdescr}
 
 \rSec2[bit.rotate]{Rotating}
@@ -16256,6 +16729,156 @@ template<class T>
 \pnum
 \returns
 The number of \tcode{1} bits in the value of \tcode{x}.
+\end{itemdescr}
+
+\rSec2[bit.permute]{Permutation}
+
+\pnum
+In the following descriptions,
+\begin{itemize}
+\item
+let $N$ denote the value of \tcode{numeric_limits<T>::digits},
+\item
+let $\alpha_n$ denote the value of the $n^\text{th}$ least significant bit
+in the base-2 representation of an integer $\alpha$,
+so that $\alpha$ equals $\sum_{n=0}^{N-1} \alpha_n 2^n$, and
+\item
+let $\sigma(\alpha, n) = \sum_{k=0}^{n-1} \alpha_k$
+be the count of one-bits among the lowest $n$ bits of $\alpha$.
+\end{itemize}
+
+\indexlibraryglobal{bit_reverse}%
+\begin{itemdecl}
+template<class T>
+  constexpr T bit_reverse(T x) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+\tcode{T} is an unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+$\mathsf{reverse}(x)$, where
+$\mathsf{reverse}$ is given by \eqref{bit.permute.reverse}, and
+$x$ is \tcode{x}.
+\begin{formula}{bit.permute.reverse}
+\mathsf{reverse}(x) = \sum_{n=0}^{N-1} x_n \, 2^{N-n-1}
+\end{formula}
+
+\pnum
+\begin{note}
+\tcode{bit_reverse(bit_reverse(x))} equals \tcode{x}.
+\end{note}
+\end{itemdescr}
+
+\indexlibraryglobal{bit_repeat}%
+\begin{itemdecl}
+template<class T>
+  constexpr T bit_repeat(T x, int l);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+\tcode{T} is an unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\expects
+\tcode{l} is greater than zero.
+
+\pnum
+\returns
+$\mathsf{repeat}(x, l)$, where
+$\mathsf{repeat}$ is given by \eqref{bit.permute.repeat},
+$x$ is \tcode{x}, and
+$l$ is \tcode{l}.
+\begin{formula}{bit.permute.repeat}
+\mathsf{repeat}(x, l) = \sum_{n=0}^{N-1} x_{(n \bmod l)} \, 2^n
+\end{formula}
+
+\pnum
+\throws
+Nothing.
+
+\pnum
+\remarks
+A function call expression that violates the precondition in the \expects
+element is not a core constant expression\iref{expr.const.core}.
+
+\pnum
+\begin{example}
+\tcode{bit_repeat(uint32_t\{0xc\}, 4)} equals \tcode{0xcccccccc}.
+\end{example}
+\end{itemdescr}
+
+\indexlibraryglobal{bit_compress}%
+\begin{itemdecl}
+template<class T>
+  constexpr T bit_compress(T x, T m) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+\tcode{T} is an unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+$\mathsf{compress}(x, m)$, where
+$\mathsf{compress}$ is given by \eqref{bit.permute.compress},
+$x$ is \tcode{x}, and
+$m$ is \tcode{m}.
+\begin{formula}{bit.permute.compress}
+\mathsf{compress}(x, m) =
+  \sum_{n=0}^{N-1} m_n x_n \, 2^{\sigma(m, n)}
+\end{formula}
+
+\pnum
+\begin{example}
+\tcode{bit_compress(0b\placeholder{ABCD}, 0b0101)} equals
+\tcode{0b00\placeholder{BD}}
+for any bits
+\tcode{\placeholder{A}},
+\tcode{\placeholder{B}},
+\tcode{\placeholder{C}}, and
+\tcode{\placeholder{D}}.
+\end{example}
+\end{itemdescr}
+
+\indexlibraryglobal{bit_expand}%
+\begin{itemdecl}
+template<class T>
+  constexpr T bit_expand(T x, T m) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\constraints
+\tcode{T} is an unsigned integer type\iref{basic.fundamental}.
+
+\pnum
+\returns
+$\mathsf{expand}(x, m)$, where
+$\mathsf{expand}$ is given by \eqref{bit.permute.expand},
+$x$ is \tcode{x}, and
+$m$ is \tcode{m}.
+\begin{formula}{bit.permute.expand}
+\mathsf{expand}(x, m) =
+  \sum_{n=0}^{N-1} m_n \, x_{\sigma(m, n)} \, 2^n
+\end{formula}
+
+\pnum
+\begin{example}
+\tcode{bit_expand(0b\placeholder{ABCD}, 0b0101)} equals
+\tcode{0b0\placeholder{C}0\placeholder{D}}
+for any bits
+\tcode{\placeholder{A}},
+\tcode{\placeholder{B}},
+\tcode{\placeholder{C}}, and
+\tcode{\placeholder{D}}.
+\end{example}
 \end{itemdescr}
 
 \rSec2[bit.endian]{Endian}

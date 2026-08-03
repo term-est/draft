@@ -519,13 +519,20 @@ returns
 \rSec2[string.view.general]{General}
 
 \pnum
-The class template \tcode{basic_string_view} describes an object that can refer to a constant contiguous sequence of char-like\iref{strings.general} objects with the first element of the sequence at position zero.
-In the rest of \ref{string.view}, the type of the char-like objects held in a \tcode{basic_string_view} object is designated by \tcode{charT}.
+The class template \tcode{basic_string_view} describes an object
+that can refer to a constant contiguous sequence of char-like\iref{strings.general} objects
+with the first element of the sequence at position zero.
+In the rest of \ref{string.view}, the type of the char-like objects
+held in a \tcode{basic_string_view} object is designated by \tcode{charT}.
 
 \pnum
 \begin{note}
-The library provides implicit conversions from \tcode{const charT*} and \tcode{std::basic_string<charT, ...>} to \tcode{std::basic_string_view<charT, ...>} so that user code can accept just \tcode{std::basic_string_view<charT>} as a non-templated parameter wherever a sequence of characters is expected.
-User-defined types can define their own implicit conversions to \tcode{std::basic_string_view<charT>} in order to interoperate with these functions.
+The library provides implicit conversions from \tcode{const charT*}
+and \tcode{std::basic_string<charT, ...>} to \tcode{std::basic_string_view<charT, ...>}
+so that user code can accept just \tcode{std::basic_string_view<charT>}
+as a non-templated parameter wherever a sequence of characters is expected.
+User-defined types can define their own implicit conversions
+to \tcode{std::basic_string_view<charT>} in order to interoperate with these functions.
 \end{note}
 
 \rSec2[string.view.synop]{Header \tcode{<string_view>} synopsis}
@@ -934,7 +941,8 @@ meets the constexpr iterator requirements\iref{iterator.requirements.general},
 whose \tcode{value_type} is the template parameter \tcode{charT}.
 
 \pnum
-All requirements on container iterators\iref{container.requirements} apply to \tcode{basic_string_view::const_iterator} as well.
+All requirements on container iterators\iref{container.requirements}
+apply to \tcode{basic_string_view::const_iterator} as well.
 \end{itemdescr}
 
 \indexlibrarymember{begin}{basic_string_view}%
@@ -1017,7 +1025,8 @@ constexpr size_type max_size() const noexcept;
 \begin{itemdescr}
 \pnum
 \returns
-The largest possible number of char-like objects that can be referred to by a \tcode{basic_string_view}.
+The largest possible number of char-like objects
+that can be referred to by a \tcode{basic_string_view}.
 \end{itemdescr}
 
 \indexlibrarymember{empty}{basic_string_view}%
@@ -1122,7 +1131,8 @@ constexpr const charT* data() const noexcept;
 \begin{note}
 Unlike \tcode{basic_string::data()} and \grammarterm{string-literal}s,
 \tcode{data()} can return a pointer to a buffer that is not null-terminated.
-Therefore it is typically a mistake to pass \tcode{data()} to a function that takes just a \tcode{const charT*} and expects a null-terminated string.
+Therefore it is typically a mistake to pass \tcode{data()} to a function
+that takes just a \tcode{const charT*} and expects a null-terminated string.
 \end{note}
 \end{itemdescr}
 
@@ -2014,6 +2024,8 @@ In all cases,
 \tcode{data() + size()} points at an object with value \tcode{charT()}
 (a ``null terminator''\indextext{string!null terminator}),
 and \tcode{size() <= capacity()} is \tcode{true}.
+The program has undefined behavior if
+the null terminator is modified to any value other than \tcode{charT()}.
 
 
 \indexlibraryglobal{basic_string}%
@@ -2151,6 +2163,7 @@ namespace std {
       constexpr basic_string& append(const T& t, size_type pos, size_type n = npos);
     constexpr basic_string& append(const charT* s, size_type n);
     constexpr basic_string& append(const charT* s);
+    constexpr basic_string& append(const charT* s, size_type pos, size_type n);
     constexpr basic_string& append(size_type n, charT c);
     template<class InputIterator>
       constexpr basic_string& append(InputIterator first, InputIterator last);
@@ -2171,6 +2184,7 @@ namespace std {
       constexpr basic_string& assign(const T& t, size_type pos, size_type n = npos);
     constexpr basic_string& assign(const charT* s, size_type n);
     constexpr basic_string& assign(const charT* s);
+    constexpr basic_string& assign(const charT* s, size_type pos, size_type n);
     constexpr basic_string& assign(size_type n, charT c);
     template<class InputIterator>
       constexpr basic_string& assign(InputIterator first, InputIterator last);
@@ -3101,10 +3115,7 @@ constexpr reference       operator[](size_type pos);
 
 \pnum
 \returns
-\tcode{*(begin() + pos)} if \tcode{pos < size()}. Otherwise,
-returns a reference to an object of type \tcode{charT} with value
-\tcode{charT()}, where modifying the object to any value other than
-\tcode{charT()} leads to undefined behavior.
+\tcode{data()[pos]}.
 
 \pnum
 \throws
@@ -3356,6 +3367,18 @@ Equivalent to: \tcode{return append(s, traits::length(s));}
 
 \indexlibrarymember{append}{basic_string}%
 \begin{itemdecl}
+constexpr basic_string& append(const charT* s, size_type pos, size_type n);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\effects
+Equivalent to:
+\tcode{return append(basic_string_view<charT, traits>(s).substr(pos, n));}
+\end{itemdescr}
+
+\indexlibrarymember{append}{basic_string}%
+\begin{itemdecl}
 constexpr basic_string& append(size_type n, charT c);
 \end{itemdecl}
 
@@ -3545,6 +3568,18 @@ constexpr basic_string& assign(const charT* s);
 \pnum
 \effects
 Equivalent to: \tcode{return assign(s, traits::length(s));}
+\end{itemdescr}
+
+\indexlibrarymember{assign}{basic_string}%
+\begin{itemdecl}
+constexpr basic_string& assign(const charT* s, size_type pos, size_type n);
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\effects
+Equivalent to:
+\tcode{return assign(basic_string_view<charT, traits>(s).substr(pos, n));}
 \end{itemdescr}
 
 \indexlibrarymember{assign}{basic_string}%
@@ -4291,42 +4326,17 @@ Constant time.
 \begin{itemdecl}
 constexpr const charT* c_str() const noexcept;
 constexpr const charT* data() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns
-A pointer \tcode{p} such that \tcode{p + i == addressof(operator[](i))} for each
-\tcode{i} in \crange{0}{size()}.
-
-\pnum
-\complexity
-Constant time.
-
-\pnum
-\remarks
-The program shall not modify any of the values stored in the character array; otherwise, the behavior is undefined.
-\end{itemdescr}
-
-\indexlibrarymember{data}{basic_string}%
-\begin{itemdecl}
 constexpr charT* data() noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
 \returns
-A pointer \tcode{p} such that \tcode{p + i == addressof(operator[](i))} for each
-\tcode{i} in \crange{0}{size()}.
+\tcode{to_address(begin())}.
 
 \pnum
 \complexity
 Constant time.
-
-\pnum
-\remarks
-The program shall not modify the value stored at \tcode{p + size()}
-to any value other than \tcode{charT()}; otherwise, the behavior is undefined.
 \end{itemdescr}
 
 \indexlibrarymember{operator basic_string_view}{basic_string}%
@@ -4443,7 +4453,11 @@ Let \placeholder{G} be the name of the function.
 Equivalent to:
 \begin{codeblock}
 basic_string_view<charT, traits> s = *this, sv = t;
-return s.@\placeholder{G}@(sv, pos);
+if (auto result = s.@\placeholder{G}@(sv, pos); result == s.npos) {
+  return npos;
+} else {
+  return result;
+}
 \end{codeblock}
 
 \pnum

@@ -269,9 +269,8 @@ where for each range argument \tcode{r}
   a corresponding iterator argument is initialized with \tcode{ranges::begin(r)} and
 \item
   a corresponding sentinel argument is initialized with \tcode{ranges::end(r)},
-  or \tcode{ranges::next(ranges::\brk{}begin(r), ranges::end(r))}
-  if the type of \tcode{r} models \libconcept{forward_range}
-  and computing \tcode{ranges::next} meets the specified complexity requirements.
+  or \tcode{ranges::begin(r) + N}
+  where \tcode{N} is equal to \tcode{ranges::distance(r)}.
 \end{itemize}
 
 \pnum
@@ -2263,7 +2262,7 @@ namespace std {
               ForwardIterator first, ForwardIterator last, const T& value);
   template<class OutputIterator, class Size,
            class T = iterator_traits<OutputIterator>::value_type>
-    constexpr OutputIterator fill_n(OutputIterator first, Size n, const T& value)
+    constexpr OutputIterator fill_n(OutputIterator first, Size n, const T& value);
   template<class ExecutionPolicy, class ForwardIterator,
            class Size, class T = iterator_traits<ForwardIterator>::value_type>
     ForwardIterator fill_n(ExecutionPolicy&& exec,              // freestanding-deleted, see \ref{algorithms.parallel.overloads}
@@ -2316,16 +2315,6 @@ namespace std {
     template<@\libconcept{input_or_output_iterator}@ O, @\libconcept{copy_constructible}@ F>
       requires @\libconcept{invocable}@<F&> && @\libconcept{indirectly_writable}@<O, invoke_result_t<F&>>
       constexpr O generate_n(O first, iter_difference_t<O> n, F gen);
-    template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterator}@ O, @\libconcept{sized_sentinel_for}@<O> S,
-             @\libconcept{copy_constructible}@ F>
-      requires @\libconcept{invocable}@<F&> && @\libconcept{indirectly_writable}@<O, invoke_result_t<F&>>
-      O generate(Ep&& exec, O first, S last, F gen);                        // freestanding-deleted
-    template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-access-range}@ R, @\libconcept{copy_constructible}@ F>
-      requires @\libconcept{invocable}@<F&> && @\libconcept{indirectly_writable}@<iterator_t<R>, invoke_result_t<F&>>
-      borrowed_iterator_t<R> generate(Ep&& exec, R&& r, F gen);             // freestanding-deleted
-    template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterator}@ O, @\libconcept{copy_constructible}@ F>
-      requires @\libconcept{invocable}@<F&> && @\libconcept{indirectly_writable}@<O, invoke_result_t<F&>>
-      O generate_n(Ep&& exec, O first, iter_difference_t<O> n, F gen);      // freestanding-deleted
   }
 
   // \ref{alg.remove}, remove
@@ -2857,12 +2846,12 @@ namespace std {
              class Comp = ranges::less, class Proj = identity>
       requires @\libconcept{sortable}@<I, Comp, Proj>
       I stable_sort(Ep&& exec, I first, S last, Comp comp = {},
-                    Proj proj = {});                                        // freestanding-deleted
+                    Proj proj = {});                                        // hosted
     template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-access-range}@ R, class Comp = ranges::less,
              class Proj = identity>
       requires @\libconcept{sortable}@<iterator_t<R>, Comp, Proj>
       borrowed_iterator_t<R>
-        stable_sort(Ep&& exec, R&& r, Comp comp = {}, Proj proj = {});      // freestanding-deleted
+        stable_sort(Ep&& exec, R&& r, Comp comp = {}, Proj proj = {});      // hosted
   }
 
   template<class RandomAccessIterator>
@@ -3141,7 +3130,7 @@ namespace std {
 
   namespace ranges {
     template<@\libconcept{forward_iterator}@ I, @\libconcept{sentinel_for}@<I> S, class Proj = identity,
-             class T = projected_value_t<I, Proj,
+             class T = projected_value_t<I, Proj>,
              @\libconcept{indirect_strict_weak_order}@<const T*, projected<I, Proj>> Comp = ranges::less>
       constexpr subrange<I>
         equal_range(I first, S last, const T& value, Comp comp = {}, Proj proj = {});
@@ -3261,12 +3250,12 @@ namespace std {
       requires @\libconcept{permutable}@<I>
       subrange<I>
         stable_partition(Ep&& exec, I first, S last, Pred pred,
-                         Proj proj = {});                                   // freestanding-deleted
+                         Proj proj = {});                                   // hosted
     template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-access-range}@ R, class Proj = identity,
              @\libconcept{indirect_unary_predicate}@<projected<iterator_t<R>, Proj>> Pred>
       requires @\libconcept{permutable}@<iterator_t<R>>
       borrowed_subrange_t<R>
-        stable_partition(Ep&& exec, R&& r, Pred pred, Proj proj = {});      // freestanding-deleted
+        stable_partition(Ep&& exec, R&& r, Pred pred, Proj proj = {});      // hosted
   }
 
   template<class InputIterator, class OutputIterator1,
@@ -3434,13 +3423,13 @@ namespace std {
              class Comp = ranges::less, class Proj = identity>
       requires @\libconcept{sortable}@<I, Comp, Proj>
       I inplace_merge(Ep&& exec, I first, I middle, S last, Comp comp = {},
-                      Proj proj = {});                          // freestanding-deleted
+                      Proj proj = {});                          // hosted
     template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-access-range}@ R, class Comp = ranges::less,
              class Proj = identity>
       requires @\libconcept{sortable}@<iterator_t<R>, Comp, Proj>
       borrowed_iterator_t<R>
         inplace_merge(Ep&& exec, R&& r, iterator_t<R> middle, Comp comp = {},
-                      Proj proj = {});                          // freestanding-deleted
+                      Proj proj = {});                          // hosted
   }
 
   // \ref{alg.set.operations}, set operations
@@ -3643,6 +3632,8 @@ namespace std {
   namespace ranges {
     template<class I, class O>
       using @\libglobal{set_difference_result}@ = in_out_result<I, O>;
+    template<class I1, class I2, class O>
+      using @\libglobal{set_difference_truncated_result}@ = in_in_out_result<I1, I2, O>;
 
     template<@\libconcept{input_iterator}@ I1, @\libconcept{sentinel_for}@<I1> S1, @\libconcept{input_iterator}@ I2, @\libconcept{sentinel_for}@<I2> S2,
              @\libconcept{weakly_incrementable}@ O, class Comp = ranges::less,
@@ -3663,7 +3654,7 @@ namespace std {
              @\libconcept{random_access_iterator}@ O, @\libconcept{sized_sentinel_for}@<O> OutS, class Comp = ranges::less,
              class Proj1 = identity, class Proj2 = identity>
       requires @\libconcept{mergeable}@<I1, I2, O, Comp, Proj1, Proj2>
-      set_difference_result<I1, O>
+      set_difference_truncated_result<I1, I2, O>
         set_difference(Ep&& exec, I1 first1, S1 last1, I2 first2, S2 last2,
                        O result, OutS result_last, Comp comp = {}, Proj1 proj1 = {},
                        Proj2 proj2 = {});                       // freestanding-deleted
@@ -3671,7 +3662,8 @@ namespace std {
              @\exposconcept{sized-random-access-range}@ OutR, class Comp = ranges::less,
              class Proj1 = identity, class Proj2 = identity>
       requires @\libconcept{mergeable}@<iterator_t<R1>, iterator_t<R2>, iterator_t<OutR>, Comp, Proj1, Proj2>
-      set_difference_result<borrowed_iterator_t<R1>, borrowed_iterator_t<OutR>>
+      set_difference_truncated_result<borrowed_iterator_t<R1>, borrowed_iterator_t<R2>,
+                                      borrowed_iterator_t<OutR>>
         set_difference(Ep&& exec, R1&& r1, R2&& r2, OutR&& result_r, Comp comp = {},
                        Proj1 proj1 = {}, Proj2 proj2 = {});     // freestanding-deleted
   }
@@ -7492,17 +7484,6 @@ template<class R, @\libconcept{copy_constructible}@ F>
 template<@\libconcept{input_or_output_iterator}@ O, @\libconcept{copy_constructible}@ F>
   requires @\libconcept{invocable}@<F&> && @\libconcept{indirectly_writable}@<O, invoke_result_t<F&>>
   constexpr O ranges::generate_n(O first, iter_difference_t<O> n, F gen);
-
-template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterator}@ O, @\libconcept{sized_sentinel_for}@<O> S,
-         @\libconcept{copy_constructible}@ F>
-  requires @\libconcept{invocable}@<F&> && @\libconcept{indirectly_writable}@<O, invoke_result_t<F&>>
-  O ranges::generate(Ep&& exec, O first, S last, F gen);
-template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-access-range}@ R, @\libconcept{copy_constructible}@ F>
-  requires @\libconcept{invocable}@<F&> && @\libconcept{indirectly_writable}@<iterator_t<R>, invoke_result_t<F&>>
-  borrowed_iterator_t<R> ranges::generate(Ep&& exec, R&& r, F gen);
-template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterator}@ O, @\libconcept{copy_constructible}@ F>
-  requires @\libconcept{invocable}@<F&> && @\libconcept{indirectly_writable}@<O, invoke_result_t<F&>>
-  O ranges::generate_n(Ep&& exec, O first, iter_difference_t<O> n, F gen);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -9076,7 +9057,7 @@ template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterat
          @\libconcept{random_access_iterator}@ I2, @\libconcept{sized_sentinel_for}@<I2> S2,
          class Comp = ranges::less, class Proj1 = identity, class Proj2 = identity>
   requires @\libconcept{indirectly_copyable}@<I1, I2> && @\libconcept{sortable}@<I2, Comp, Proj2> &&
-            @\libconcept{indirect_strict_weak_order}@<Comp, projected<I1, Proj1>, projected<I2, Proj2>>
+           @\libconcept{indirect_strict_weak_order}@<Comp, projected<I1, Proj1>, projected<I2, Proj2>>
   ranges::partial_sort_copy_result<I1, I2>
     ranges::partial_sort_copy(Ep&& exec, I1 first, S1 last, I2 result_first, S2 result_last,
                               Comp comp = {}, Proj1 proj1 = {},
@@ -9281,7 +9262,7 @@ template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterat
          class Proj = identity,
          @\libconcept{indirect_strict_weak_order}@<projected<I, Proj>> Comp = ranges::less>
   I ranges::is_sorted_until(Ep&& exec, I first, S last, Comp comp = {},
-                    Proj proj = {});
+                            Proj proj = {});
 template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-access-range}@ R, class Proj = identity,
          @\libconcept{indirect_strict_weak_order}@<projected<iterator_t<R>, Proj>> Comp = ranges::less>
   borrowed_iterator_t<R>
@@ -9892,7 +9873,7 @@ template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-acces
          class Proj = identity,
          @\libconcept{indirect_unary_predicate}@<projected<iterator_t<R>, Proj>> Pred>
   requires @\libconcept{indirectly_copyable}@<iterator_t<R>, iterator_t<OutR1>> &&
-            @\libconcept{indirectly_copyable}@<iterator_t<R>, iterator_t<OutR2>>
+           @\libconcept{indirectly_copyable}@<iterator_t<R>, iterator_t<OutR2>>
   ranges::partition_copy_result<borrowed_iterator_t<R>, borrowed_iterator_t<OutR1>,
                                 borrowed_iterator_t<OutR2>>
     ranges::partition_copy(Ep&& exec, R&& r, OutR1&& out_true_r, OutR2&& out_false_r,
@@ -10340,7 +10321,7 @@ template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterat
 template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-access-range}@ R1, @\exposconcept{sized-random-access-range}@ R2,
          class Proj1 = identity, class Proj2 = identity,
          @\libconcept{indirect_strict_weak_order}@<projected<iterator_t<R1>, Proj1>,
-                                     projected<iterator_t<R2>, Proj2>> Comp = ranges::less>
+                                    projected<iterator_t<R2>, Proj2>> Comp = ranges::less>
   bool ranges::includes(Ep&& exec, R1&& r1, R2&& r2,
                         Comp comp = {}, Proj1 proj1 = {}, Proj2 proj2 = {});
 \end{itemdecl}
@@ -10557,8 +10538,8 @@ template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterat
   requires @\libconcept{mergeable}@<I1, I2, O, Comp, Proj1, Proj2>
   ranges::set_intersection_result<I1, I2, O>
     ranges::set_intersection(Ep&& exec, I1 first1, S1 last1,
-                      I2 first2, S2 last2, O result, OutS result_last,
-                      Comp comp = {}, Proj1 proj1 = {}, Proj2 proj2 = {});
+                             I2 first2, S2 last2, O result, OutS result_last,
+                             Comp comp = {}, Proj1 proj1 = {}, Proj2 proj2 = {});
 template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-access-range}@ R1, @\exposconcept{sized-random-access-range}@ R2,
          @\exposconcept{sized-random-access-range}@ OutR, class Comp = ranges::less,
          class Proj1 = identity, class Proj2 = identity>
@@ -10605,9 +10586,9 @@ are included in the sorted intersection.
 If, of those elements, $k$ elements from the first range
 are copied to the output range,
 then the first $k$ elements from the second range
-are considered \term{skipped}.
-If $N < M$, a non-copied element is also considered skipped
-if it compares less than the $(N + 1)^\text{th}$ element
+are considered \defn{skipped}.
+A non-copied element is also considered skipped
+if it compares less than the $\min(M, N + 1)^\text{th}$ element
 of the sorted intersection.
 Copies the first $N$ elements of the sorted intersection
 to the range \range{result}{result + $N$}.
@@ -10620,11 +10601,10 @@ to the range \range{result}{result + $N$}.
   for the overloads in namespace \tcode{std}.
 \item
   \tcode{\{last1, last2, result + $N$\}}
-  for the overloads in namespace \tcode{ranges},
-  if $N$ is equal to $M$.
+  for the non-parallel algorithm overloads in namespace \tcode{ranges}.
 \item
-  Otherwise, \tcode{\{first1 + $A$, first2 + $B$, result_last\}}
-  for the overloads in namespace \tcode{ranges},
+  Otherwise, \tcode{\{first1 + $A$, first2 + $B$, result + $N$\}}
+  for the parallel algorithm overloads in namespace \tcode{ranges},
   where $A$ and $B$ are the numbers of copied or skipped elements
   in \range{first1}{last1} and \range{first2}{last2}, respectively.
 \end{itemize}
@@ -10690,7 +10670,7 @@ template<@\exposconcept{execution-policy}@ Ep, @\libconcept{random_access_iterat
          @\libconcept{random_access_iterator}@ O, @\libconcept{sized_sentinel_for}@<O> OutS, class Comp = ranges::less,
          class Proj1 = identity, class Proj2 = identity>
   requires @\libconcept{mergeable}@<I1, I2, O, Comp, Proj1, Proj2>
-  ranges::set_difference_result<I1, O>
+  ranges::set_difference_truncated_result<I1, I2, O>
     ranges::set_difference(Ep&& exec, I1 first1, S1 last1,
                            I2 first2, S2 last2, O result, OutS result_last,
                            Comp comp = {}, Proj1 proj1 = {}, Proj2 proj2 = {});
@@ -10698,7 +10678,8 @@ template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-acces
          @\exposconcept{sized-random-access-range}@ OutR, class Comp = ranges::less,
          class Proj1 = identity, class Proj2 = identity>
   requires @\libconcept{mergeable}@<iterator_t<R1>, iterator_t<R2>, iterator_t<OutR>, Comp, Proj1, Proj2>
-  ranges::set_difference_result<borrowed_iterator_t<R1>, borrowed_iterator_t<OutR>>
+  ranges::set_difference_truncated_result<borrowed_iterator_t<R1>, borrowed_iterator_t<R2>,
+                                          borrowed_iterator_t<OutR>>
     ranges::set_difference(Ep&& exec, R1&& r1, R2&& r2, OutR&& result_r, Comp comp = {},
                            Proj1 proj1 = {}, Proj2 proj2 = {});
 \end{itemdecl}
@@ -10737,6 +10718,12 @@ that are equivalent to each other and
 that are equivalent to them,
 the last $\max(m - n, 0)$ elements from \range{first1}{last1}
 are included in the sorted difference, in order.
+Of those equivalent elements,
+the first $\min(m, n)$ elements in both ranges
+are considered \defn{skipped}.
+An element from the second range is also considered skipped
+if it compares less than the $\min(N + 1, M)^\text{th}$ element
+of the sorted difference.
 Copies the first $N$ elements of the sorted difference
 to the range \range{result}{result + $N$}.
 
@@ -10748,14 +10735,19 @@ to the range \range{result}{result + $N$}.
   for the overloads in namespace \tcode{std}.
 \item
   \tcode{\{last1, result + $N$\}}
-  for the overloads in namespace \tcode{ranges},
-  if $N$ is equal to $M$.
+  for the non-parallel overloads in namespace \tcode{ranges}.
 \item
-  Otherwise, \tcode{\{j1, result_last\}}
-  for the overloads in namespace \tcode{ranges},
-  where the iterator \tcode{j1}
-  points to the position of the element in \range{first1}{last1}
-  corresponding to the $(N + 1)^\text{th}$ element of the sorted difference.
+  For the parallel algorithm overloads in namespace \tcode{ranges}:
+  \begin{itemize}
+  \item
+    \tcode{\{last1, first2 + $B$, result + $N$\}},
+    if $N$ is equal to $M$,
+    where $B$ is the number of skipped elements in \range{first2}{last2}.
+  \item
+    Otherwise, \tcode{\{first1 + $A$, first2 + $B$, result_last\}},
+    where $A$ and $B$ are the numbers of copied or skipped elements
+    in \range{first1}{last1} and \range{first2}{last2}, respectively.
+  \end{itemize}
 \end{itemize}
 
 \pnum
@@ -10830,7 +10822,7 @@ template<@\exposconcept{execution-policy}@ Ep, @\exposconcept{sized-random-acces
          class Proj1 = identity, class Proj2 = identity>
   requires @\libconcept{mergeable}@<iterator_t<R1>, iterator_t<R2>, iterator_t<OutR>, Comp, Proj1, Proj2>
   ranges::set_symmetric_difference_result<borrowed_iterator_t<R1>, borrowed_iterator_t<R2>,
-                                  borrowed_iterator_t<OutR>>
+                                          borrowed_iterator_t<OutR>>
     ranges::set_symmetric_difference(Ep&& exec, R1&& r1, R2&& r2, OutR&& result_r,
                                      Comp comp = {}, Proj1 proj1 = {}, Proj2 proj2 = {});
 \end{itemdecl}
@@ -12279,15 +12271,15 @@ namespace std {
 
   // \ref{numeric.sat}, saturation arithmetic
   template<class T>
-    constexpr T add_sat(T x, T y) noexcept;
+    constexpr T saturating_add(T x, T y) noexcept;
   template<class T>
-    constexpr T sub_sat(T x, T y) noexcept;
+    constexpr T saturating_sub(T x, T y) noexcept;
   template<class T>
-    constexpr T mul_sat(T x, T y) noexcept;
+    constexpr T saturating_mul(T x, T y) noexcept;
   template<class T>
-    constexpr T div_sat(T x, T y) noexcept;
+    constexpr T saturating_div(T x, T y) noexcept;
   template<class T, class U>
-    constexpr T saturate_cast(U x) noexcept;
+    constexpr T saturating_cast(U x) noexcept;
 }
 \end{codeblock}
 
@@ -13431,10 +13423,10 @@ In the following descriptions, an arithmetic operation
 is performed as a mathematical operation with infinite range and then
 it is determined whether the mathematical result fits into the result type.
 
-\indexlibraryglobal{add_sat}%
+\indexlibraryglobal{saturating_add}%
 \begin{itemdecl}
 template<class T>
-  constexpr T add_sat(T x, T y) noexcept;
+  constexpr T saturating_add(T x, T y) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13449,10 +13441,10 @@ otherwise, either the largest or smallest representable value of type \tcode{T},
 whichever is closer to the value of $\tcode{x} + \tcode{y}$.
 \end{itemdescr}
 
-\indexlibraryglobal{sub_sat}%
+\indexlibraryglobal{saturating_sub}%
 \begin{itemdecl}
 template<class T>
-  constexpr T sub_sat(T x, T y) noexcept;
+  constexpr T saturating_sub(T x, T y) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13467,10 +13459,10 @@ otherwise, either the largest or smallest representable value of type \tcode{T},
 whichever is closer to the value of $\tcode{x} - \tcode{y}$.
 \end{itemdescr}
 
-\indexlibraryglobal{mul_sat}%
+\indexlibraryglobal{saturating_mul}%
 \begin{itemdecl}
 template<class T>
-  constexpr T mul_sat(T x, T y) noexcept;
+  constexpr T saturating_mul(T x, T y) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13485,10 +13477,10 @@ otherwise, either the largest or smallest representable value of type \tcode{T},
 whichever is closer to the value of $\tcode{x} \times \tcode{y}$.
 \end{itemdescr}
 
-\indexlibraryglobal{div_sat}%
+\indexlibraryglobal{saturating_div}%
 \begin{itemdecl}
 template<class T>
-  constexpr T div_sat(T x, T y) noexcept;
+  constexpr T saturating_div(T x, T y) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -13510,15 +13502,15 @@ and \tcode{x == numeric_limits<T>::min() \&\& y == -1} is \tcode{true},
 \remarks
 A function call expression
 that violates the precondition in the \Fundescx{Preconditions} element
-is not a core constant expression\iref{expr.const}.
+is not a core constant expression\iref{expr.const.core}.
 \end{itemdescr}
 
 \rSec3[numeric.sat.cast]{Casting}
 
-\indexlibraryglobal{saturate_cast}%
+\indexlibraryglobal{saturating_cast}%
 \begin{itemdecl}
 template<class R, class T>
-  constexpr R saturate_cast(T x) noexcept;
+  constexpr R saturating_cast(T x) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -14130,7 +14122,8 @@ are left in a valid but unspecified state.
 
 \indexlibraryglobal{uninitialized_fill}%
 \begin{itemdecl}
-template<class NoThrowForwardIterator, class T>
+template<class NoThrowForwardIterator,
+         class T = iterator_traits<NoThrowForwardIterator>::value_type>
   constexpr void uninitialized_fill(NoThrowForwardIterator first,
                                     NoThrowForwardIterator last, const T& x);
 \end{itemdecl}
@@ -14148,10 +14141,10 @@ for (; first != last; ++first)
 \indexlibraryglobal{uninitialized_fill}%
 \begin{itemdecl}
 namespace ranges {
-  template<@\exposconcept{nothrow-forward-iterator}@ I, @\exposconcept{nothrow-sentinel-for}@<I> S, class T>
+  template<@\exposconcept{nothrow-forward-iterator}@ I, @\exposconcept{nothrow-sentinel-for}@<I> S, class T = iter_value_t<I>>
     requires @\libconcept{constructible_from}@<iter_value_t<I>, const T&>
     constexpr I uninitialized_fill(I first, S last, const T& x);
-  template<@\exposconcept{nothrow-forward-range}@ R, class T>
+  template<@\exposconcept{nothrow-forward-range}@ R, class T = range_value_t<R>>
     requires @\libconcept{constructible_from}@<range_value_t<R>, const T&>
     constexpr borrowed_iterator_t<R> uninitialized_fill(R&& r, const T& x);
 }
@@ -14170,7 +14163,8 @@ return first;
 
 \indexlibraryglobal{uninitialized_fill_n}%
 \begin{itemdecl}
-template<class NoThrowForwardIterator, class Size, class T>
+template<class NoThrowForwardIterator, class Size,
+         class T = iterator_traits<NoThrowForwardIterator>::value_type>
   constexpr NoThrowForwardIterator
     uninitialized_fill_n(NoThrowForwardIterator first, Size n, const T& x);
 \end{itemdecl}
@@ -14189,7 +14183,7 @@ return first;
 \indexlibraryglobal{uninitialized_fill_n}%
 \begin{itemdecl}
 namespace ranges {
-  template<@\exposconcept{nothrow-forward-iterator}@ I, class T>
+  template<@\exposconcept{nothrow-forward-iterator}@ I, class T = iter_value_t<I>>
     requires @\libconcept{constructible_from}@<iter_value_t<I>, const T&>
     constexpr I uninitialized_fill_n(I first, iter_difference_t<I> n, const T& x);
 }
@@ -14350,7 +14344,7 @@ are declared in the header \libheaderrefx{random}{rand.synopsis}.
 \begin{itemdecl}
 template<class R, class G>
   requires @\libconcept{output_range}@<R, invoke_result_t<G&>> && @\libconcept{uniform_random_bit_generator}@<remove_cvref_t<G>>
-constexpr borrowed_iterator_t<R> ranges::generate_random(R&& r, G&& g);
+  constexpr borrowed_iterator_t<R> ranges::generate_random(R&& r, G&& g);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -14393,7 +14387,7 @@ with the same values as produced by invocation of \tcode{g()}.
 \begin{itemdecl}
 template<class G, @\libconcept{output_iterator}@<invoke_result_t<G&>> O, @\libconcept{sentinel_for}@<O> S>
   requires @\libconcept{uniform_random_bit_generator}@<remove_cvref_t<G>>
-constexpr O ranges::generate_random(O first, S last, G&& g);
+  constexpr O ranges::generate_random(O first, S last, G&& g);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -14411,7 +14405,7 @@ template<class R, class G, class D>
   requires @\libconcept{output_range}@<R, invoke_result_t<D&, G&>> && @\libconcept{invocable}@<D&, G&> &&
            @\libconcept{uniform_random_bit_generator}@<remove_cvref_t<G>> &&
            is_arithmetic_v<invoke_result_t<D&, G&>>
-constexpr borrowed_iterator_t<R> ranges::generate_random(R&& r, G&& g, D&& d);
+  constexpr borrowed_iterator_t<R> ranges::generate_random(R&& r, G&& g, D&& d);
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -14462,7 +14456,7 @@ as produced by invocation of \tcode{invoke(d, g)}.
 template<class G, class D, @\libconcept{output_iterator}@<invoke_result_t<D&, G&>> O, @\libconcept{sentinel_for}@<O> S>
   requires @\libconcept{invocable}@<D&, G&> && @\libconcept{uniform_random_bit_generator}@<remove_cvref_t<G>> &&
            is_arithmetic_v<invoke_result_t<D&, G&>>
-constexpr O ranges::generate_random(O first, S last, G&& g, D&& d);
+  constexpr O ranges::generate_random(O first, S last, G&& g, D&& d);
 \end{itemdecl}
 
 \begin{itemdescr}
